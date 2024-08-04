@@ -6,9 +6,6 @@ package-lock.json
 dist/
 build/
 out/
-*.js
-*.d.ts
-*.js.map
 
 # 테스트 결과 및 커버리지 보고서
 coverage/
