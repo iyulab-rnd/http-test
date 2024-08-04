@@ -21,7 +21,8 @@ export async function run(filePath: string, options: RunOptions): Promise<void> 
     const httpFileParser = new HttpFileParser(variableManager);
     const requests: HttpRequest[] = await httpFileParser.parse(filePath);
 
-    const testManager = new TestManager();
+    const baseDir = path.dirname(filePath); // baseDir을 설정합니다.
+    const testManager = new TestManager(baseDir); // baseDir을 TestManager에 전달합니다.
     const results = await testManager.run(requests, options);
 
     // 결과 처리 로직

@@ -45,7 +45,7 @@ export type AssertionType = "status" | "header" | "body" | "custom";
 export interface Assertion {
   type: AssertionType;
   key?: string;
-  value: any | ((value: any) => boolean);
+  value?: any | ((value: any) => boolean);
   customFunction?: string;
 }
 

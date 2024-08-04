@@ -6,7 +6,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "types": ["jest", "node"],
-    "lib": ["ES2023", "DOM"]
+    "types": ["jest", "node", "es6-shim"],
+    "lib": ["es2015", "DOM"]
   }
 }

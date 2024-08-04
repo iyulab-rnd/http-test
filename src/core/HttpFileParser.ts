@@ -1,9 +1,9 @@
 import { Assertion, HttpRequest, TestItem } from '../types';
 import { readFile } from '../utils/fileUtils';
-import { 
-  logVerbose 
-} from '../utils/logger';
+import { logVerbose } from '../utils/logger';
 import { VariableManager } from './VariableManager';
+import path from 'path';
+import FormData from 'form-data';
 
 export class HttpFileParser {
   constructor(private variableManager: VariableManager) {}
@@ -13,16 +13,19 @@ export class HttpFileParser {
     logVerbose(`File content loaded: ${filePath}`);
     const requests: HttpRequest[] = [];
     const lines = content.split('\n');
-  
+    const baseDir = path.dirname(filePath);
+
     let currentRequest: HttpRequest | null = null;
     let currentTest: TestItem | null = null;
     let isParsingBody = false;
-  
+    let bodyBuffer: string[] = [];
+    let contentType: string | null = null;
+
     for (const line of lines) {
       const trimmedLine = line.trim();
       logVerbose(`Processing line: ${trimmedLine}`);
 
-      if (this.isComment(trimmedLine)) {
+      if (this.isComment(trimmedLine, isParsingBody)) {
         continue;
       }
 
@@ -37,27 +40,71 @@ export class HttpFileParser {
         currentRequest = this.startNewRequest(trimmedLine);
         currentTest = null;
         isParsingBody = false;
+        bodyBuffer = [];
+        contentType = null;
       } else if (this.isTestStart(trimmedLine) && currentRequest) {
         currentTest = this.startNewTest(trimmedLine, currentRequest);
         isParsingBody = false;
+        bodyBuffer = [];
       } else if (this.isHttpMethod(trimmedLine) && currentRequest) {
         this.setRequestMethod(currentRequest, trimmedLine);
-      } else if (trimmedLine.includes(':') && currentRequest) {
+      } else if (trimmedLine.includes(':') && currentRequest && !isParsingBody) {
         this.handleKeyValuePair(currentRequest, currentTest, trimmedLine, isParsingBody);
-      } else if (trimmedLine === '') {
-        isParsingBody = false;
+
+        if (trimmedLine.toLowerCase().startsWith('content-type')) {
+          const [key, value] = trimmedLine.split(':').map(s => s.trim());
+          if (key.toLowerCase() === 'content-type') {
+            contentType = value.toLowerCase();
+          }
+        }
+      } else if (this.isBodyStart(trimmedLine, contentType)) {
+        isParsingBody = true;
+        bodyBuffer.push(trimmedLine);
+      } else if (isParsingBody) {
+        bodyBuffer.push(trimmedLine);
+        if (this.isBodyEnd(trimmedLine, bodyBuffer[0])) {
+          isParsingBody = false;
+          if (currentRequest) {
+            currentRequest.body = this.parseBodyContent(bodyBuffer.join('\n').trim(), contentType);
+          }
+        }
       } else if (currentRequest && !currentTest) {
         this.appendToRequestBody(currentRequest, line);
+      } else if (this.isCustomAssertStart(trimmedLine) && currentTest) {
+        currentTest.assertions.push({
+          type: 'custom',
+          customFunction: this.resolvePath(baseDir, trimmedLine.split(' ')[1].trim())
+        });
+        logVerbose(`Added custom assertion: ${this.resolvePath(baseDir, trimmedLine.split(' ')[1].trim())}`);
+      } else if (this.isCustomAssertValue(trimmedLine) && currentTest) {
+        currentTest.assertions.push({
+          type: 'custom',
+          customFunction: this.resolvePath(baseDir, trimmedLine.split(':')[1].trim())
+        });
+        logVerbose(`Added custom assertion: ${this.resolvePath(baseDir, trimmedLine.split(':')[1].trim())}`);
       }
     }
 
     this.finishCurrentRequest(currentRequest, requests);
-  
     logVerbose(`Total parsed requests: ${requests.length}`);
     return requests;
   }
 
-  private isComment(line: string): boolean {
+  private resolvePath(baseDir: string, relativeOrAbsolutePath: string): string {
+    return path.isAbsolute(relativeOrAbsolutePath)
+      ? relativeOrAbsolutePath
+      : path.join(baseDir, relativeOrAbsolutePath);
+  }
+
+  private isComment(line: string, isParsingBody: boolean): boolean {
+    if (isParsingBody && line.includes('#')) {
+      const matches = line.match(/"(.*?)"/g);
+      if (matches) {
+        for (const match of matches) {
+          line = line.replace(match, match.replace(/#/g, ''));
+        }
+      }
+    }
     return line.startsWith('#') && !this.isRequestStart(line) && !this.isTestStart(line);
   }
 
@@ -71,6 +118,25 @@ export class HttpFileParser {
 
   private isHttpMethod(line: string): boolean {
     return /^(GET|POST|PUT|DELETE|PATCH)\s/.test(line);
+  }
+
+  private isBodyStart(line: string, contentType: string | null): boolean {
+    return (contentType === 'application/json' && (line === '{' || line === '[')) ||
+           (contentType === 'application/xml' && line.startsWith('<'));
+  }
+
+  private isBodyEnd(line: string, startLine: string): boolean {
+    return (line === '}' && startLine.startsWith('{')) || 
+           (line === ']' && startLine.startsWith('[')) || 
+           (line.startsWith('</') && startLine.startsWith('<'));
+  }
+
+  private isCustomAssertStart(line: string): boolean {
+    return line.startsWith('Custom-Assert');
+  }
+
+  private isCustomAssertValue(line: string): boolean {
+    return line.toLowerCase().startsWith('_customassert');
   }
 
   private handleVariable(line: string): void {
@@ -88,14 +154,14 @@ export class HttpFileParser {
     currentRequest.variableUpdates.push({ key, value });
     logVerbose(`Added variable update to request: ${key} = ${value}`);
   }
-  
+
   private finishCurrentRequest(currentRequest: HttpRequest | null, requests: HttpRequest[]): void {
     if (currentRequest) {
       requests.push(currentRequest);
       logVerbose(`Parsed request: ${currentRequest.name}, URL: ${currentRequest.url}`);
     }
   }
-  
+
   private startNewRequest(line: string): HttpRequest {
     const newRequest: HttpRequest = {
       name: line.slice(4).trim(),
@@ -109,11 +175,11 @@ export class HttpFileParser {
     logVerbose(`Started new request: ${newRequest.name}`);
     return newRequest;
   }
-  
+
   private startNewTest(line: string, currentRequest: HttpRequest): TestItem {
     const newTest: TestItem = {
       type: 'Assert',
-      name: line.slice(5).trim() || 'Assert',
+      name: currentRequest.name + " " + line.slice(5).trim() || 'Assert',
       assertions: []
     };
     currentRequest.tests.push(newTest);
@@ -145,7 +211,35 @@ export class HttpFileParser {
   }
 
   private appendToRequestBody(currentRequest: HttpRequest, line: string): void {
+    if (currentRequest.body === undefined) {
+      currentRequest.body = '';
+    }
     currentRequest.body += line + '\n';
+  }
+
+  private parseBodyContent(body: string, contentType: string | null): string | FormData {
+    switch (contentType) {
+      case 'application/json':
+        return this.variableManager.replaceVariables(body);
+      case 'application/xml':
+        return this.variableManager.replaceVariables(body);
+      case 'text/plain':
+        return this.variableManager.replaceVariables(body);
+      case 'multipart/form-data':
+        const form = new FormData();
+        const parts = body.split('------WebKitFormBoundary');
+        parts.forEach(part => {
+          const match = part.match(/name="([^"]+)"\s*(.*)/s);
+          if (match) {
+            const name = match[1];
+            const value = match[2].trim();
+            form.append(name, value);
+          }
+        });
+        return form;
+      default:
+        return this.variableManager.replaceVariables(body);
+    }
   }
 
   private parseAssertion(key: string, value: string): Assertion {
@@ -156,11 +250,13 @@ export class HttpFileParser {
     } else if (key.startsWith('$')) {
       let parsedValue: any = this.parseValue(value);
       return { type: 'body', key, value: parsedValue };
+    } else if (key.toLowerCase() === 'custom-assert' || key.toLowerCase() === '_customassert') {
+      return { type: 'custom', customFunction: value.trim() };
     } else {
       return { type: 'header', key, value };
     }
   }
-  
+
   private parseValue(value: string): any {
     try {
       return JSON.parse(value);
@@ -176,3 +272,4 @@ export class HttpFileParser {
     }
   }
 }
+

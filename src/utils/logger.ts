@@ -97,8 +97,5 @@ export function logTestSummary(summary: TestSummary): void {
     const statusCode = result.statusCode ? `(Status: ${result.statusCode})` : '';
     const message = `${indent}${index + 1}. ${result.name}: ${status} ${statusCode}`;
     logPlain(message);
-    if (!result.passed && result.error) {
-      logError(`${indent}${indent}${result.error instanceof Error ? result.error.message : String(result.error)}`);
-    }
   });
 }

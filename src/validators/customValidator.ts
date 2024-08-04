@@ -1,12 +1,14 @@
 import vm from 'vm';
 import { readFile } from '../utils/fileUtils';
+import path from 'path';
 
-export async function loadCustomValidator(functionPath: string | undefined): Promise<Function> {
+export async function loadCustomValidator(functionPath: string | undefined, baseDir: string): Promise<Function> {
   if (!functionPath) {
     throw new Error('Custom validator function path is not provided');
   }
 
-  const script = await readFile(functionPath);
+  const resolvedPath = path.isAbsolute(functionPath) ? functionPath : path.join(baseDir, functionPath);
+  const script = await readFile(resolvedPath);
   const context = {
     module: { exports: {} },
     require,

@@ -3,6 +3,7 @@ import { HttpRequest, HttpResponse } from '../types';
 import { VariableManager } from './VariableManager';
 import { convertAxiosResponse } from '../utils/httpUtils';
 import { logVerbose } from '../utils/logger';
+import FormData from 'form-data';
 
 export class RequestExecutor {
   constructor(private variableManager: VariableManager) {}
@@ -23,7 +24,7 @@ export class RequestExecutor {
   }
 
   private applyVariables(request: HttpRequest): HttpRequest {
-    return {
+    const updatedRequest = {
       ...request,
       url: this.variableManager.replaceVariables(request.url),
       headers: Object.fromEntries(
@@ -32,8 +33,23 @@ export class RequestExecutor {
           this.variableManager.replaceVariables(value)
         ])
       ),
-      body: request.body ? this.variableManager.replaceVariables(request.body) : undefined
     };
+
+    if (this.isFormData(request.body)) {
+      const formData = new FormData();
+      request.body.forEach((value, key) => {
+        formData.append(key, this.variableManager.replaceVariables(value));
+      });
+      updatedRequest.body = formData;
+    } else if (request.body) {
+      updatedRequest.body = this.variableManager.replaceVariables(request.body);
+    }
+
+    return updatedRequest;
+  }
+
+  private isFormData(body: any): body is FormData {
+    return body && typeof body.getHeaders === 'function';
   }
 
   private async sendRequest(request: HttpRequest) {
@@ -41,9 +57,10 @@ export class RequestExecutor {
     return axios({
       method,
       url,
-      headers,
+      headers: this.isFormData(body) ? { ...headers, ...body.getHeaders() } : headers,
       data: body,
       timeout: 5000, // 5 seconds timeout
+      validateStatus: (status) => true // 모든 상태 코드를 허용하도록 설정
     });
   }
 }

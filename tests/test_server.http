@@ -1,34 +1,22 @@
 @host = http://localhost:3000
 
-### TEST_1 - GET all users
-GET {{host}}/users
+### POST form data
+POST {{host}}/submitForm
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="name"
+
+Alice Johnson
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="email"
+
+alice@example.com
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
 
 #### Assert
-Status: 200
+Status: 201
 Content-Type: application/json
 Body:
-$[0].id: 1
-$[0].name: John Doe
-$[1].id: 2
-$[1].name: Jane Smith
-
-### TEST_2 - GET user by ID
-GET {{host}}/users/1
-
-#### Assert: Check Headers
-Status: 200
-Content-Type: application/json
-
-#### Assert: Check Body
-Body:
-$.id: 1
-$.name: John Doe
-$.email: john@example.com
-
-### TEST_3 - GET non-existent user
-GET {{host}}/users/999
-#### Assert
-Status: 404
-Content-Type: application/json
-Body:
-$.error: User not found
+$.name: Alice Johnson
+$.email: alice@example.com

@@ -1,6 +1,6 @@
 @host = http://localhost:3000
 
-### TEST_1 - GET all users
+### GET all users
 GET {{host}}/users
 
 #### Assert
@@ -12,7 +12,7 @@ $[0].name: John Doe
 $[1].id: 2
 $[1].name: Jane Smith
 
-### TEST_2 - GET user by ID
+### GET user by ID
 GET {{host}}/users/1
 
 #### Assert: Check Headers
@@ -25,132 +25,132 @@ $.id: 1
 $.name: John Doe
 $.email: john@example.com
 
-# ### TEST_3 - GET non-existent user
-# GET {{host}}/users/999
-# #### Assert
-# Status: 404
-# Content-Type: application/json
-# Body:
-# $.error: User not found
+### GET non-existent user
+GET {{host}}/users/999
+#### Assert
+Status: 404
+Content-Type: application/json
+Body:
+$.error: User not found
 
-# ### TEST_4 - POST new user
-# POST {{host}}/users
-# Content-Type: application/json
+### POST new user
+POST {{host}}/users
+Content-Type: application/json
 
-# {
-#   "name": "Alice Johnson",
-#   "email": "alice@example.com"
-# }
+{
+  "name": "Alice Johnson",
+  "email": "alice@example.com"
+}
 
-# #### Assert
-# Status: 201
-# Content-Type: application/json
-# Body:
-# $.id: 3
-# $.name: Alice Johnson
-# $.email: alice@example.com
+#### Assert
+Status: 201
+Content-Type: application/json
+Body:
+$.name: Alice Johnson
+$.email: alice@example.com
 
-# # 저장된 사용자 ID를 변수로 저장
-# @newUserId = $.id
+# 저장된 사용자 ID를 변수로 저장
+@newUserId = $.id
 
-# ### TEST_5 - Verify new user added
-# GET {{host}}/users
-# #### Assert
-# Status: 200
-# Content-Type: application/json
-# Body:
-# $[2].id: {{newUserId}}
-# $[2].name: Alice Johnson
-# $[2].email: alice@example.com
+### Verify new user added
+GET {{host}}/users/{{newUserId}}
 
-# ### TEST_6 - POST new post
-# POST {{host}}/posts
-# Content-Type: application/json
+#### Assert
+Status: 200
+Content-Type: application/json
+Body:
+$.name: Alice Johnson
+$.email: alice@example.com
 
-# {
-#   "title": "New Post",
-#   "body": "This is a new post",
-#   "userId": {{newUserId}}
-# }
+### POST new post
+POST {{host}}/posts
+Content-Type: application/json
 
-# #### Assert
-# Status: 201
-# Content-Type: application/json
-# Body:
-# $.id: 1
-# $.title: New Post
-# $.body: This is a new post
-# $.userId: {{newUserId}}
+{
+  "title": "New Post",
+  "body": "This is a new post",
+  "userId": {{newUserId}}
+}
 
-# # 저장된 포스트 ID를 변수로 저장
-# @newPostId = $.id
+#### Assert
+Status: 201
+Content-Type: application/json
+Body:
+$.title: New Post
+$.body: This is a new post
+$.userId: {{newUserId}}
 
-# ### TEST_7 - GET post comments (initially empty)
-# GET {{host}}/posts/{{newPostId}}/comments
-# #### Assert
-# Status: 200
-# Content-Type: application/json
-# Body: []
+# 저장된 포스트 ID를 변수로 저장
+@newPostId = $.id
 
-# @host = http://localhost:3000
+### GET post comments (initially empty)
+GET {{host}}/posts/{{newPostId}}/comments
+#### Assert
+Status: 200
+Content-Type: application/json
+Body: []
 
-# ### TEST_8 - Use a custom validation script
-# GET {{host}}/users/{{newUserId}}
-# #### Assert
-# Status: 200
-# Content-Type: application/json
-# < ./custom-assert.js
+@host = http://localhost:3000
 
-# ### TEST_9 - INTENTIONAL FAILURE (POST new user with invalid email)
-# POST {{host}}/users
-# Content-Type: application/json
+### Use a custom validation script
+GET {{host}}/users/{{newUserId}}
+#### Assert
+Status: 200
+Content-Type: application/json
+_CustomAssert: ./custom-assert.js
 
-# {
-#   "name": "Bob Smith",
-#   "email": "bob_at_example.com"  # Invalid email format
-# }
+### POST new user with invalid email
+POST {{host}}/users
+Content-Type: application/json
 
-# #### Assert
-# Status: 201
-# Content-Type: application/json
-# Body:
-# $.id: 4
-# $.name: Bob Smith
-# $.email: bob_at_example.com
+{
+  "name": "Bob Smith",
+  "email": "bob_at_example.com"  # Invalid email format
+}
 
-# ### TEST_10 - INTENTIONAL FAILURE (GET user with mismatched ID)
-# GET {{host}}/users/999
-# #### Assert
-# Status: 200
-# Content-Type: application/json
-# < ./custom-assert.js
+#### Assert
+Status: 400
 
-# ### TEST_11 - INTENTIONAL FAILURE (GET non-existent post)
-# GET {{host}}/posts/999
-# #### Assert
-# Status: 404
-# Content-Type: application/json
-# Body:
-# $.error: Post not found
+### GET non-existent post
+GET {{host}}/posts/999
 
-# ### TEST_12 - POST file upload
-# POST {{host}}/upload
-# Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+#### Assert
+Status: 404
+Content-Type: application/json
+Body:
+$.error: Post not found
 
-# ------WebKitFormBoundary7MA4YWxkTrZu0gW
-# Content-Disposition: form-data; name="text"
+### POST file upload
+POST {{host}}/upload
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
 
-# title
-# ------WebKitFormBoundary7MA4YWxkTrZu0gW
-# Content-Disposition: form-data; name="file"; filename="attchefile.data"
-# Content-Type: application/octet-stream
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="attchefile.data"
+Content-Type: application/octet-stream
 
-# < ./attchefile.data
-# ------WebKitFormBoundary7MA4YWxkTrZu0gW--
+< ./attchefile.data
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
 
-# #### Assert
-# Status: 201
-# Content-Type: application/json
-# Body:
-# $.message: File uploaded successfully
-# $.filename: /.+/
+#### Assert
+Status: 201
+
+### POST form data
+POST {{host}}/submitForm
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="name"
+
+Alice Johnson
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="email"
+
+alice@example.com
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+#### Assert
+Status: 201
+Content-Type: application/json
+Body:
+$.name: Alice Johnson
+$.email: alice@example.com

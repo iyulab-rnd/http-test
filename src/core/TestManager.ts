@@ -29,9 +29,9 @@ export class TestManager {
   private variableManager: VariableManager;
   private assertionEngine: AssertionEngine;
 
-  constructor() {
+  constructor(private baseDir: string) {
     this.variableManager = new VariableManager();
-    this.assertionEngine = new AssertionEngine(this.variableManager);
+    this.assertionEngine = new AssertionEngine(this.variableManager, this.baseDir);
     this.requestExecutor = new RequestExecutor(this.variableManager);
     this.responseProcessor = new ResponseProcessor(this.variableManager);
     this.resultCollector = new TestResultCollector();
@@ -77,7 +77,7 @@ export class TestManager {
         ? request.tests
         : [this.createDefaultStatusCodeTest()];
     const results: TestResult[] = [];
-
+  
     for (const test of tests) {
       try {
         await this.runTest(test, response);
@@ -88,18 +88,10 @@ export class TestManager {
         );
       }
     }
-
+  
     return results;
   }
-
-  private async runTest(test: TestItem, response: HttpResponse): Promise<void> {
-    logVerbose(`Running test: ${test.name}`);
-    for (const assertion of test.assertions) {
-      logVerbose(`Asserting: ${JSON.stringify(assertion)}`);
-      await this.assertionEngine.assert(assertion, response);
-    }
-  }
-
+  
   private createTestResult(
     test: TestItem,
     request: HttpRequest,
@@ -119,6 +111,14 @@ export class TestManager {
     };
   }
 
+  private async runTest(test: TestItem, response: HttpResponse): Promise<void> {
+    logVerbose(`Running test: ${test.name}`);
+    for (const assertion of test.assertions) {
+      logVerbose(`Asserting: ${JSON.stringify(assertion)}`);
+      await this.assertionEngine.assert(assertion, response);
+    }
+  }
+  
   private createDefaultStatusCodeTest(): TestItem {
     return {
       type: "Assert",

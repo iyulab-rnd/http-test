@@ -1,7 +1,5 @@
 import { Variables } from '../types';
-import { 
-  logVerbose 
-} from '../utils/logger';
+import { logVerbose } from '../utils/logger';
 import { replaceVariablesInString } from '../utils/variableUtils';
 
 export class VariableManager {
@@ -15,12 +13,16 @@ export class VariableManager {
     return replaceVariablesInString(content, this.variables);
   }
 
-  setVariable(key: string, value: string): void {
+  setVariable(key: string, value: any): void {
     this.variables[key] = value;
     logVerbose(`Set variable: ${key} = ${value}`);
   }
 
-  getVariable(key: string): string | undefined {
+  getVariable(key: string): any | undefined {
     return this.variables[key];
+  }
+
+  getAllVariables(): Variables {
+    return this.variables;
   }
 }
