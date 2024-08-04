@@ -1,4 +1,4 @@
-import { Assertion, HttpResponse } from '../types';
+import { Assertion, CustomValidatorContext, HttpRequest, HttpResponse } from '../types';
 import { JSONPath } from 'jsonpath-plus';
 import { VariableManager } from './VariableManager';
 import { logVerbose, logInfo, logError } from '../utils/logger';
@@ -8,7 +8,7 @@ import path from 'path';
 export class AssertionEngine {
   constructor(private variableManager: VariableManager, private baseDir: string) {}
 
-  async assert(assertion: Assertion, response: HttpResponse): Promise<void> {
+  async assert(assertion: Assertion, response: HttpResponse, request: HttpRequest): Promise<void> {
     // 변수 적용
     if (typeof assertion.value === 'string') {
       assertion.value = this.variableManager.replaceVariables(assertion.value);
@@ -26,9 +26,9 @@ export class AssertionEngine {
       case 'body':
         await this.assertBody(assertion, response);
         break;
-      case 'custom':
-        await this.assertCustom(assertion, response);
-        break;
+        case 'custom':
+          await this.assertCustom(assertion, response, request);
+          break;  
       default:
         throw new Error(`Unknown assertion type: ${(assertion as Assertion).type}`);
     }
@@ -69,13 +69,13 @@ export class AssertionEngine {
   }
 
   private async assertBody(assertion: Assertion, response: HttpResponse): Promise<void> {
-    this.assertJsonContentType(response);
     const responseData = this.parseResponseData(response);
-
-    if (assertion.customFunction) {
-      logVerbose(`Running custom validator: ${assertion.customFunction}`);
-      await this.runCustomValidator(assertion.customFunction, response);
+  
+    if (assertion.key === '$') {
+      // 'Body:' 키워드 처리. 이 경우 아무 것도 하지 않습니다.
+      return;
     } else if (typeof assertion.key === 'string' && assertion.key.startsWith('$')) {
+      // JSONPath를 사용한 부분 검증
       const jsonPath = this.adjustJsonPath(assertion.key, responseData);
       const result = JSONPath({ path: jsonPath, json: responseData });
       if (result.length === 0) {
@@ -87,17 +87,21 @@ export class AssertionEngine {
         throw new Error(`Expected ${jsonPath} to be ${JSON.stringify(expectedValue)}, got ${JSON.stringify(actualValue)}`);
       }
     } else {
-      if (!this.isEqual(responseData, assertion.value)) {
-        throw new Error(`Body mismatch: ${JSON.stringify(responseData)} !== ${JSON.stringify(assertion.value)}`);
-      }
+      throw new Error(`Invalid body assertion key: ${assertion.key}`);
     }
   }
-
-  private assertJsonContentType(response: HttpResponse): void {
-    const contentType = response.headers['content-type'];
-    if (!contentType || !contentType.includes('application/json')) {
-      throw new Error(`Expected Content-Type to be application/json, got ${contentType}`);
+  
+  private parseValue(value: any): any {
+    if (typeof value === 'string') {
+      if (!isNaN(Number(value))) {
+        return Number(value);
+      } else if (value.toLowerCase() === 'true') {
+        return true;
+      } else if (value.toLowerCase() === 'false') {
+        return false;
+      }
     }
+    return value;
   }
 
   private parseResponseData(response: HttpResponse): any {
@@ -114,20 +118,7 @@ export class AssertionEngine {
     }
     return jsonPath;
   }
-
-  private parseValue(value: any): any {
-    if (typeof value === 'string') {
-      if (!isNaN(Number(value))) {
-        return Number(value);
-      } else if (value.toLowerCase() === 'true') {
-        return true;
-      } else if (value.toLowerCase() === 'false') {
-        return false;
-      }
-    }
-    return value;
-  }
-
+  
   private isEqual(actual: any, expected: any): boolean {
     if (Array.isArray(actual) && Array.isArray(expected)) {
       return actual.length === expected.length && 
@@ -142,32 +133,41 @@ export class AssertionEngine {
     return actual === expected;
   }
 
-  private async assertCustom(assertion: Assertion, response: HttpResponse): Promise<void> {
+  private async assertCustom(assertion: Assertion, response: HttpResponse, request: HttpRequest): Promise<void> {
     if (!assertion.customFunction) {
       throw new Error('Custom function path is not provided for custom assertion');
     }
     try {
       logVerbose(`Running custom validator script: ${assertion.customFunction}`);
-      await this.runCustomValidator(assertion.customFunction, response);
+      await this.runCustomValidator(assertion.customFunction, response, request);
       logVerbose(`Custom validator script executed successfully`);
     } catch (error) {
       logError(`Custom validation failed: ${error instanceof Error ? error.message : String(error)}`);
       throw new Error(`Custom validation failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
-  
-  private async runCustomValidator(customFunctionPath: string, response: HttpResponse): Promise<void> {
-    const customValidator = await loadCustomValidator(customFunctionPath, this.baseDir);
-    const context = {
+
+  private async runCustomValidator(customFunctionPath: string, response: HttpResponse, request: HttpRequest): Promise<void> {
+    const resolvedPath = this.resolvePath(customFunctionPath);
+    const customValidator = await loadCustomValidator(resolvedPath, this.baseDir);
+    const context: CustomValidatorContext = {
+      request,
       variables: this.variableManager.getAllVariables()
     };
     try {
-      logVerbose(`Executing custom validator from path: ${customFunctionPath}`);
+      logVerbose(`Executing custom validator from path: ${resolvedPath}`);
       customValidator(response, context);
       logVerbose(`Custom validator executed without error`);
     } catch (error) {
       logError(`Error in custom validator: ${error instanceof Error ? error.message : String(error)}`);
       throw error;
     }
+  }
+
+  private resolvePath(customFunctionPath: string): string {
+    if (path.isAbsolute(customFunctionPath)) {
+      return customFunctionPath;
+    }
+    return path.resolve(this.baseDir, customFunctionPath);
   }
 }

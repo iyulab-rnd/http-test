@@ -1,14 +1,12 @@
 import vm from 'vm';
 import { readFile } from '../utils/fileUtils';
 import path from 'path';
+import { HttpResponse, CustomValidatorContext } from '../types';
 
-export async function loadCustomValidator(functionPath: string | undefined, baseDir: string): Promise<Function> {
-  if (!functionPath) {
-    throw new Error('Custom validator function path is not provided');
-  }
-
+export async function loadCustomValidator(functionPath: string, baseDir: string): Promise<(response: HttpResponse, context: CustomValidatorContext) => void> {
   const resolvedPath = path.isAbsolute(functionPath) ? functionPath : path.join(baseDir, functionPath);
   const script = await readFile(resolvedPath);
+  
   const context = {
     module: { exports: {} },
     require,
@@ -22,5 +20,5 @@ export async function loadCustomValidator(functionPath: string | undefined, base
     throw new Error('Custom validator must export a function');
   }
 
-  return context.module.exports;
+  return context.module.exports as (response: HttpResponse, context: CustomValidatorContext) => void;
 }

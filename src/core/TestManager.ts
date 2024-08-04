@@ -59,33 +59,38 @@ export class TestManager {
 
   private async processRequest(request: HttpRequest): Promise<void> {
     logRequestStart(request);
-    const response = await this.requestExecutor.execute(request);
-    await this.responseProcessor.process(response, request.variableUpdates);
-    const testResults = await this.runTests(request, response);
-    testResults.forEach((result) => {
-      this.resultCollector.addResult(result);
-      logTestResult(result);
-    });
+    try {
+      const response = await this.requestExecutor.execute(request);
+      await this.responseProcessor.process(response, request.variableUpdates);
+      const testResults = await this.runTests(request, response);
+      testResults.forEach((result) => {
+        this.resultCollector.addResult(result);
+        logTestResult(result);
+      });
+    } catch (error) {
+      const errorMessage = `Request failed: ${request.name}\n${error instanceof Error ? error.message : String(error)}`;
+      logError(errorMessage);
+      this.resultCollector.addResult({
+        name: request.name,
+        passed: false,
+        error: new Error(errorMessage),
+        statusCode: undefined,
+      });
+    }
   }
-
-  private async runTests(
-    request: HttpRequest,
-    response: HttpResponse
-  ): Promise<TestResult[]> {
-    const tests =
-      request.tests.length > 0
-        ? request.tests
-        : [this.createDefaultStatusCodeTest()];
+  
+  private async runTests(request: HttpRequest, response: HttpResponse): Promise<TestResult[]> {
+    const tests = request.tests.length > 0 ? request.tests : [this.createDefaultStatusCodeTest()];
     const results: TestResult[] = [];
   
     for (const test of tests) {
       try {
-        await this.runTest(test, response);
+        for (const assertion of test.assertions) {
+          await this.assertionEngine.assert(assertion, response, request);
+        }
         results.push(this.createTestResult(test, request, response, true));
       } catch (error) {
-        results.push(
-          this.createTestResult(test, request, response, false, error)
-        );
+        results.push(this.createTestResult(test, request, response, false, error));
       }
     }
   
@@ -109,14 +114,6 @@ export class TestManager {
         ? error
         : new Error(String(error)),
     };
-  }
-
-  private async runTest(test: TestItem, response: HttpResponse): Promise<void> {
-    logVerbose(`Running test: ${test.name}`);
-    for (const assertion of test.assertions) {
-      logVerbose(`Asserting: ${JSON.stringify(assertion)}`);
-      await this.assertionEngine.assert(assertion, response);
-    }
   }
   
   private createDefaultStatusCodeTest(): TestItem {

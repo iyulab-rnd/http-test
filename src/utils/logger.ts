@@ -1,5 +1,10 @@
-import chalk from 'chalk';
-import { LogLevel, TestSummary, HttpRequest, TestResult } from '../types';
+import chalk from "chalk";
+import {
+  LogLevel,
+  TestSummary,
+  HttpRequest,
+  TestResult
+} from "../types";
 
 let verbose = false;
 
@@ -68,14 +73,18 @@ export function logRequestStart(request: HttpRequest): void {
 
 export function logTestResult(result: TestResult): void {
   const status = result.passed ? "✅ PASS" : "❌ FAIL";
-  const statusCode = result.statusCode ? `(Status: ${result.statusCode})` : '';
+  const statusCode = result.statusCode ? `(Status: ${result.statusCode})` : "";
   const message = `${result.name}: ${status} ${statusCode}`;
   if (result.passed) {
     logInfo(message);
   } else {
     logWarning(message);
     if (result.error) {
-      logError(result.error instanceof Error ? result.error.message : String(result.error));
+      logError(
+        result.error instanceof Error
+          ? result.error.message
+          : String(result.error)
+      );
     }
   }
 }
@@ -87,15 +96,21 @@ export function logTestSummary(summary: TestSummary): void {
   logPlain(`Total Tests: ${summary.totalTests}`);
   logPlain(`Passed Tests: ${summary.passedTests}`);
   logPlain(`Failed Tests: ${summary.failedTests}`);
-  
-  const statusEmojis = summary.results.map(r => r.passed ? "✅" : "❌").join("");
+
+  const statusEmojis = summary.results
+    .map((r) => (r.passed ? "✅" : "❌"))
+    .join("");
   logPlain(`\n${statusEmojis}`);
 
   summary.results.forEach((result, index) => {
     const indent = "  ";
     const status = result.passed ? "✅ PASS" : "❌ FAIL";
-    const statusCode = result.statusCode ? `(Status: ${result.statusCode})` : '';
-    const message = `${indent}${index + 1}. ${result.name}: ${status} ${statusCode}`;
+    const statusCode = result.statusCode
+      ? `(Status: ${result.statusCode})`
+      : "";
+    const message = `${indent}${index + 1}. ${
+      result.name
+    }: ${status} ${statusCode}`;
     logPlain(message);
   });
 }
