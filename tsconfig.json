@@ -1,12 +1,12 @@
 {
   "compilerOptions": {
-    "target": "es6",
+    "target": "esnext",
     "module": "commonjs",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "types": ["jest", "node", "es6-shim"],
-    "lib": ["es2015", "DOM"]
+    "types": ["node"],
+    "lib": ["esnext", "DOM"]
   }
 }

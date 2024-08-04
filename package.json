@@ -19,7 +19,6 @@
   },
   "dependencies": {
     "axios": "^1.7.3",
-    "jsonpath": "^1.1.1",
     "jsonpath-plus": "^9.0.0",
     "tslib": "^2.6.3"
   },
@@ -45,7 +44,8 @@
     "jest": "^29.7.0",
     "multer": "^1.4.5-lts.1",
     "rollup": "^4.20.0",
-    "ts-jest": "^29.2.4"
+    "ts-jest": "^29.2.4",
+    "typescript": "^5.5.4"
   },
   "scripts": {
     "lint": "eslint src/**/*.ts",
