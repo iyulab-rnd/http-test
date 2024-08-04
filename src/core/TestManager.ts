@@ -1,11 +1,25 @@
-import { HttpRequest, TestResult, RunOptions, HttpResponse, TestItem, Assertion, LogLevel } from "../types";
+import {
+  HttpRequest,
+  TestResult,
+  RunOptions,
+  HttpResponse,
+  TestItem,
+  Assertion,
+  LogLevel,
+} from "../types";
 import { AssertionEngine } from "./AssertionEngine";
 import { VariableManager } from "./VariableManager";
 import { RequestExecutor } from "./RequestExecutor";
 import { ResponseProcessor } from "./ResponseProcessor";
 import { TestResultCollector } from "./TestResultCollector";
-import { 
-  logRequestStart, logTestResult, logTestSummary, log, setVerbose, logError, logVerbose 
+import {
+  logRequestStart,
+  logTestResult,
+  logTestSummary,
+  log,
+  setVerbose,
+  logError,
+  logVerbose,
 } from "../utils/logger";
 
 export class TestManager {
@@ -22,8 +36,11 @@ export class TestManager {
     this.responseProcessor = new ResponseProcessor(this.variableManager);
     this.resultCollector = new TestResultCollector();
   }
-  
-  async run(requests: HttpRequest[], options?: RunOptions): Promise<TestResult[]> {
+
+  async run(
+    requests: HttpRequest[],
+    options?: RunOptions
+  ): Promise<TestResult[]> {
     setVerbose(!!options?.verbose);
 
     for (const request of requests) {
@@ -36,7 +53,7 @@ export class TestManager {
 
     const summary = this.resultCollector.getSummary();
     logTestSummary(summary);
-    
+
     return this.resultCollector.getResults();
   }
 
@@ -45,14 +62,20 @@ export class TestManager {
     const response = await this.requestExecutor.execute(request);
     await this.responseProcessor.process(response, request.variableUpdates);
     const testResults = await this.runTests(request, response);
-    testResults.forEach(result => {
+    testResults.forEach((result) => {
       this.resultCollector.addResult(result);
       logTestResult(result);
     });
   }
 
-  private async runTests(request: HttpRequest, response: HttpResponse): Promise<TestResult[]> {
-    const tests = request.tests.length > 0 ? request.tests : [this.createDefaultStatusCodeTest()];
+  private async runTests(
+    request: HttpRequest,
+    response: HttpResponse
+  ): Promise<TestResult[]> {
+    const tests =
+      request.tests.length > 0
+        ? request.tests
+        : [this.createDefaultStatusCodeTest()];
     const results: TestResult[] = [];
 
     for (const test of tests) {
@@ -60,7 +83,9 @@ export class TestManager {
         await this.runTest(test, response);
         results.push(this.createTestResult(test, request, response, true));
       } catch (error) {
-        results.push(this.createTestResult(test, request, response, false, error));
+        results.push(
+          this.createTestResult(test, request, response, false, error)
+        );
       }
     }
 
@@ -75,12 +100,22 @@ export class TestManager {
     }
   }
 
-  private createTestResult(test: TestItem, request: HttpRequest, response: HttpResponse, passed: boolean, error?: unknown): TestResult {
+  private createTestResult(
+    test: TestItem,
+    request: HttpRequest,
+    response: HttpResponse,
+    passed: boolean,
+    error?: unknown
+  ): TestResult {
     return {
       name: test.name || request.name,
       passed,
       statusCode: response.status,
-      error: passed ? undefined : error instanceof Error ? error : new Error(String(error))
+      error: passed
+        ? undefined
+        : error instanceof Error
+        ? error
+        : new Error(String(error)),
     };
   }
 
@@ -91,20 +126,25 @@ export class TestManager {
       assertions: [
         {
           type: "status",
-          value: (status: number) => status >= 200 && status < 300
-        } as Assertion
-      ]
+          value: (status: number) => status >= 200 && status < 300,
+        } as Assertion,
+      ],
     };
   }
 
-  private async handleRequestError(error: unknown, request: HttpRequest): Promise<void> {
-    const errorMessage = `Request failed: ${request.name}\n${error instanceof Error ? error.message : String(error)}`;
+  private async handleRequestError(
+    error: unknown,
+    request: HttpRequest
+  ): Promise<void> {
+    const errorMessage = `Request failed: ${request.name}\n${
+      error instanceof Error ? error.message : String(error)
+    }`;
     log(errorMessage, LogLevel.ERROR);
     this.resultCollector.addResult({
       name: request.name,
       passed: false,
       error: new Error(errorMessage),
-      statusCode: undefined
+      statusCode: undefined,
     });
   }
 }

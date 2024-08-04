@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { HttpRequest, HttpResponse } from '../types';
 import { VariableManager } from './VariableManager';
 import { convertAxiosResponse } from '../utils/httpUtils';
@@ -10,8 +10,16 @@ export class RequestExecutor {
   async execute(request: HttpRequest): Promise<HttpResponse> {
     const processedRequest = this.applyVariables(request);
     logVerbose(`Executing request: ${processedRequest.method} ${processedRequest.url}`);
-    const axiosResponse = await this.sendRequest(processedRequest);
-    return convertAxiosResponse(axiosResponse);
+    try {
+      const axiosResponse = await this.sendRequest(processedRequest);
+      return convertAxiosResponse(axiosResponse);
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        // 예상된 오류 응답을 반환
+        return convertAxiosResponse(error.response);
+      }
+      throw error;
+    }
   }
 
   private applyVariables(request: HttpRequest): HttpRequest {

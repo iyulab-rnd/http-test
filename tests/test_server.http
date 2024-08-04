@@ -24,3 +24,11 @@ Body:
 $.id: 1
 $.name: John Doe
 $.email: john@example.com
+
+### TEST_3 - GET non-existent user
+GET {{host}}/users/999
+#### Assert
+Status: 404
+Content-Type: application/json
+Body:
+$.error: User not found
