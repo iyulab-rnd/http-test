@@ -1,0 +1,41 @@
+# Node.js 관련 파일/폴더
+node_modules/
+package-lock.json
+
+# TypeScript 컴파일 결과물
+dist/
+build/
+out/
+*.js
+*.d.ts
+*.js.map
+
+# 테스트 결과 및 커버리지 보고서
+coverage/
+.nyc_output/
+
+# 환경 설정 파일
+.env
+.env.local
+.env.*.local
+
+# 로그 파일
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# IDE/편집기 관련 파일
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# 시스템 파일
+.DS_Store
+Thumbs.db
+
+# 임시 파일
+tmp/
+temp/
+uploads/

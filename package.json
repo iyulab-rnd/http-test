@@ -1,0 +1,60 @@
+{
+  "name": "@iyulab/http-test",
+  "version": "1.0.0",
+  "description": "You can perform tests utilizing HTTP extension files.",
+  "author": {
+    "name": "iyulab",
+    "url": "https://www.iyulab.com"
+  },
+  "homepage": "https://www.iyulab.com",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/iyulab-rnd/http-test"
+  },
+  "main": "src/index.js",
+  "types": "src/index.d.ts",
+  "bin": {
+    "http-test": "src/program.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.3",
+    "jsonpath": "^1.1.1",
+    "jsonpath-plus": "^9.0.0",
+    "tslib": "^2.6.3"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "@babel/preset-env": "^7.25.3",
+    "@babel/preset-typescript": "^7.24.7",
+    "@rollup/plugin-commonjs": "^26.0.1",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^11.1.6",
+    "@types/jest": "^29.5.12",
+    "@types/jsonpath": "^0.2.4",
+    "@types/linq": "^2.2.33",
+    "@types/node": "^22.1.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "babel-jest": "^29.7.0",
+    "eslint": "^9.8.0",
+    "express": "^4.19.2",
+    "jest": "^29.7.0",
+    "multer": "^1.4.5-lts.1",
+    "rollup": "^4.20.0",
+    "ts-jest": "^29.2.4"
+  },
+  "scripts": {
+    "lint": "eslint src/**/*.ts",
+    "build": "iyulab build -d dist -b rollup",
+    "deploy": "iyulab publish -p"
+  },
+  "files": [
+    "dist",
+    "package.json",
+    "README.md",
+    "LICENSE"
+  ]
+}
