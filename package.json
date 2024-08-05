@@ -1,6 +1,6 @@
 {
   "name": "@iyulab/http-test",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "You can perform tests utilizing HTTP extension files.",
   "author": {
     "name": "iyulab",
