@@ -1,3 +1,5 @@
+"use strict";
+
 import { run } from './cli';
 
 async function main() {

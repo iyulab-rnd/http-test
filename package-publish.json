@@ -1,4 +1,5 @@
 {
+  "type": "commonjs",
   "main": "bundle.js",
   "module": "bundle.js",
   "types": "index.d.ts",
