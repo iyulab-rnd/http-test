@@ -4,6 +4,6 @@
   "module": "bundle.js",
   "types": "index.d.ts",
   "bin": {
-    "http-test": "program.js"
+    "http-test": "./program.js"
   }
 }
