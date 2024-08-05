@@ -5,5 +5,17 @@
   "types": "index.d.ts",
   "bin": {
     "http-test": "./program.js"
-  }
+  },
+  "files": [
+    "cli",
+    "core",
+    "errors",
+    "parsers",
+    "types",
+    "utils",
+    "validators",
+    "index.js",
+    "package.json",
+    "../README.md"
+  ]
 }

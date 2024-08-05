@@ -1,6 +1,6 @@
 {
   "name": "@iyulab/http-test",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "You can perform tests utilizing HTTP extension files.",
   "author": {
     "name": "iyulab",
@@ -54,7 +54,6 @@
   "files": [
     "dist",
     "package.json",
-    "README.md",
-    "LICENSE"
+    "README.md"
   ]
 }
