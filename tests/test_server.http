@@ -178,7 +178,7 @@ $.title: Updated Post Title
 GET {{host}}/posts/{{newPostId}}
 
 #### Assert: Verify updated post title
-Status: 200
+Status: 201
 Content-Type: application/json
 Body:
 $.title: Updated Post Title
@@ -187,7 +187,7 @@ $.title: Updated Post Title
 GET {{host}}/posts/999
 
 #### Assert: Check non-existent post
-Status: 404
+Status: 401
 Content-Type: application/json
 Body:
 $.error: Post not found
@@ -277,7 +277,7 @@ Content-Type: application/json
 }
 
 #### Assert: Check missing fields
-Status: 400
+Status: 401
 Content-Type: application/json
 Body:
 $.error: Missing required fields
