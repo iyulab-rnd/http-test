@@ -23,7 +23,17 @@ async function main() {
   }
 
   try {
-    await run(filePath, options);
+    // 현재 작업 디렉토리를 기준으로 절대 경로 생성
+    const absoluteFilePath = path.resolve(process.cwd(), filePath);
+    
+    // 파일 존재 여부 확인
+    if (!fs.existsSync(absoluteFilePath)) {
+      console.error(`File not found: ${absoluteFilePath}`);
+      process.exit(1);
+    }
+
+    // 절대 경로를 run 함수에 전달
+    await run(absoluteFilePath, options);
   } catch (error) {
     console.error('Error:', error);
     process.exit(1);

@@ -1,0 +1,6 @@
+@host = https://labs.iyulab.com:7197
+@token = u3dZmBJcqt08tzWX
+
+### Get identity claims
+GET {{host}}/identity/claims
+Authorization: Bearer {{token}}

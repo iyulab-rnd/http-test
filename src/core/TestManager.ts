@@ -28,11 +28,12 @@ export class TestManager {
   private resultCollector: TestResultCollector;
   private variableManager: VariableManager;
   private assertionEngine: AssertionEngine;
+  private baseDir: string;
 
   constructor(httpFilePath: string) {
-    const baseDir = path.dirname(httpFilePath);
+    this.baseDir = path.dirname(httpFilePath);
     this.variableManager = new VariableManager();
-    this.assertionEngine = new AssertionEngine(this.variableManager, baseDir);
+    this.assertionEngine = new AssertionEngine(this.variableManager, this.baseDir);
     this.requestExecutor = new RequestExecutor(this.variableManager);
     this.responseProcessor = new ResponseProcessor(this.variableManager);
     this.resultCollector = new TestResultCollector();

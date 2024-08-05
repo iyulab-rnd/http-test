@@ -1,3 +1,4 @@
+import path from "path";
 import {
   HttpRequest,
   TestItem,
@@ -15,8 +16,11 @@ export class HttpFileParser {
   private currentTest: TestItem | null = null;
   private isParsingBody = false;
   private bodyContent = "";
+  private baseDir: string;
 
-  constructor(private variableManager: VariableManager) {}
+  constructor(private variableManager: VariableManager, baseDir: string) {
+    this.baseDir = baseDir;
+  }
 
   async parse(filePath: string): Promise<HttpRequest[]> {
     const content = await readFile(filePath);
@@ -223,7 +227,7 @@ export class HttpFileParser {
       key.toLowerCase() === "custom-assert" ||
       key.toLowerCase() === "_customassert"
     ) {
-      const customFunction = value.trim();
+      const customFunction = this.resolvePath(value.trim());
       if (!this.parsedCustomAssertions.has(customFunction)) {
         this.parsedCustomAssertions.add(customFunction);
         return { type: "custom", customFunction };
@@ -267,5 +271,9 @@ export class HttpFileParser {
       }
     }
     return inQuotes;
+  }
+
+  private resolvePath(relativePath: string): string {
+    return path.resolve(this.baseDir, relativePath);
   }
 }

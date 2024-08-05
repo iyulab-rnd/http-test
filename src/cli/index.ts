@@ -6,11 +6,6 @@ import { logInfo, logError, setVerbose } from "../utils/logger";
 import { fileExists, loadVariables } from "../utils/fileUtils";
 import { HttpFileParser } from "../core/HttpFileParser";
 
-/**
- * Runs the test suite based on the provided file path and options.
- * @param filePath - The path to the HTTP file.
- * @param options - Run options including verbose mode and variable file.
- */
 export async function run(
   filePath: string,
   options: RunOptions
@@ -20,13 +15,16 @@ export async function run(
   try {
     logInfo("Starting test run...");
 
+    const absoluteFilePath = path.resolve(filePath);
+    const baseDir = path.dirname(absoluteFilePath);
+
     const variableManager = new VariableManager();
-    await loadVariablesFile(variableManager, filePath, options.var);
+    await loadVariablesFile(variableManager, absoluteFilePath, options.var);
 
-    const httpFileParser = new HttpFileParser(variableManager);
-    const requests: HttpRequest[] = await httpFileParser.parse(filePath);
+    const httpFileParser = new HttpFileParser(variableManager, baseDir);
+    const requests: HttpRequest[] = await httpFileParser.parse(absoluteFilePath);
 
-    const testManager = new TestManager(filePath);
+    const testManager = new TestManager(absoluteFilePath);
     const results = await testManager.run(requests, options);
 
     const failedTests = results.filter((result) => !result.passed);
@@ -41,12 +39,6 @@ export async function run(
   }
 }
 
-/**
- * Loads variables from a file if specified or available.
- * @param variableManager - The VariableManager instance.
- * @param filePath - The path to the main HTTP file.
- * @param varFile - Optional path to a variable file.
- */
 async function loadVariablesFile(
   variableManager: VariableManager,
   filePath: string,
@@ -65,10 +57,6 @@ async function loadVariablesFile(
   }
 }
 
-/**
- * Handles errors that occur during the test run.
- * @param error - The error object or message.
- */
 async function handleError(error: unknown): Promise<void> {
   logError("Error running tests:");
   if (error instanceof AggregateError && Array.isArray(error.errors)) {

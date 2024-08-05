@@ -22,7 +22,7 @@ function runHttpTest(uri: vscode.Uri | undefined, verbose: boolean) {
     outputChannel.appendLine('Running HTTP Test...');
 
     const verboseFlag = verbose ? '--verbose' : '';
-    exec(`npx http-test "${filePath}" ${verboseFlag}`, { cwd: workspaceRoot }, (err, stdout, stderr) => {
+    exec(`npx -y @iyulab/http-test "${filePath}" ${verboseFlag}`, { cwd: workspaceRoot }, (err, stdout, stderr) => {
         if (stdout) {
             outputChannel.appendLine(stdout);
         }

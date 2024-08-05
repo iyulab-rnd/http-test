@@ -25,15 +25,20 @@ For an even easier experience, use the [http-test VS Code Extension](https://mar
 2. Run the tests:
 
 ```bash
-npx http-test path/to/your/tests.http
+npx @iyulab/http-test path/to/your/tests.http
 ```
 
 ## Install
 
 ```bash
 npm install @iyulab/http-test -g
+```
 
+Once installed, you can simply run it with the command below.
+
+```bash
 http-test path/to/your/tests.http
+http-test path/to/your/tests.http --verbose
 ```
 
 ## Writing Tests

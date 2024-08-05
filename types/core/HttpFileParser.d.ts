@@ -7,7 +7,8 @@ export declare class HttpFileParser {
     private currentTest;
     private isParsingBody;
     private bodyContent;
-    constructor(variableManager: VariableManager);
+    private baseDir;
+    constructor(variableManager: VariableManager, baseDir: string);
     parse(filePath: string): Promise<HttpRequest[]>;
     private parseRequests;
     private resetParserState;
@@ -30,4 +31,5 @@ export declare class HttpFileParser {
     private parseValue;
     private parseJsonBody;
     private isInsideQuotes;
+    private resolvePath;
 }
