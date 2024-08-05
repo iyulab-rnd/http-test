@@ -204,19 +204,7 @@ export class AssertionEngine {
     }
     return value;
   }
-
-  private parseResponseData(response: HttpResponse): unknown {
-    try {
-      return typeof response.data === "string"
-        ? JSON.parse(response.data)
-        : response.data;
-    } catch (error) {
-      throw new AssertionError(
-        `Failed to parse response data as JSON: ${error}`
-      );
-    }
-  }
-
+  
   private adjustJsonPath(jsonPath: string, data: unknown): string {
     if (
       typeof data === "object" &&

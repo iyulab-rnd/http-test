@@ -1,12 +1,10 @@
 import { logVerbose } from '../utils/logger';
-import { ContentTypeParser, ParserContext } from './ContentTypeParser';
+import { ContentTypeParser } from './ContentTypeParser';
 import FormData from 'form-data';
 
 export class MultipartFormDataParser implements ContentTypeParser {
   private bodyBuffer: string[] = [];
   private isParsingBody = false;
-
-  constructor(private context: ParserContext) {}
 
   parseBody(body: string, boundary?: string): FormData | string {
     if (!boundary) return body;

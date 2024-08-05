@@ -157,68 +157,6 @@ export class RequestExecutor {
     }
   }
 
-  /**
-   * Creates a multipart form data object.
-   * @param body - The body content.
-   * @returns An object containing the FormData and headers.
-   */
-  private createMultipartFormData(body: string | undefined): {
-    formData: FormData;
-    headers: Record<string, string>;
-  } {
-    const formData = new FormData();
-    const lines = body?.split("\n") || [];
-    let currentName: string | null = null;
-    let currentFilename: string | null = null;
-    let currentContentType: string | null = null;
-    let isFile = false;
-    let fileContent = "";
-
-    for (const line of lines) {
-      if (line.startsWith("Content-Disposition:")) {
-        const nameMatch = line.match(/name="([^"]+)"/);
-        const filenameMatch = line.match(/filename="([^"]+)"/);
-        if (nameMatch) {
-          currentName = nameMatch[1];
-        }
-        if (filenameMatch) {
-          currentFilename = filenameMatch[1];
-          isFile = true;
-        } else {
-          isFile = false;
-        }
-      } else if (line.startsWith("Content-Type:")) {
-        currentContentType = line.split(":")[1].trim();
-      } else if (line.trim() === "" && currentName) {
-        if (isFile) {
-          fileContent = "";
-        }
-      } else if (currentName) {
-        if (isFile) {
-          fileContent += line + "\n";
-        } else {
-          formData.append(currentName, line.trim());
-          currentName = null;
-        }
-      }
-
-      if (currentName && isFile && line.trim() === "" && fileContent) {
-        const buffer = Buffer.from(fileContent);
-        formData.append(currentName, buffer, {
-          filename: currentFilename || "file",
-          contentType: currentContentType || "application/octet-stream",
-        });
-        currentName = null;
-        currentFilename = null;
-        currentContentType = null;
-        isFile = false;
-        fileContent = "";
-      }
-    }
-
-    return { formData, headers: formData.getHeaders() };
-  }
-
   private async handleRequestError(
     error: unknown,
     request: HttpRequest

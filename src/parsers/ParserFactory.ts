@@ -9,7 +9,7 @@ export class ParserFactory {
     if (contentType.includes('application/json')) {
       return new JsonParser(context);
     } else if (contentType.includes('multipart/form-data')) {
-      return new MultipartFormDataParser(context);
+      return new MultipartFormDataParser();
     }
     // 기본 파서 또는 다른 content-type에 대한 파서 추가
     logVerbose(`Using default JsonParser for content-type: ${contentType}`);

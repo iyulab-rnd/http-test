@@ -1,7 +1,7 @@
 import { HttpResponse, VariableUpdate } from "../types";
 import { VariableManager } from "./VariableManager";
 import { JSONPath } from "jsonpath-plus";
-import { logVerbose, logError, logWarning } from "../utils/logger";
+import { logVerbose, logWarning } from "../utils/logger";
 
 export class ResponseProcessor {
   constructor(private variableManager: VariableManager) {}
@@ -44,10 +44,10 @@ export class ResponseProcessor {
     }
   }
   
-  private evaluateExpression(expression: string, context: any): string | number | boolean {
+  private evaluateExpression(expression: string, context: unknown): string | number | boolean {
     if (expression.startsWith('$.')) {
       // JSONPath
-      return this.extractValueFromJsonPath(expression, context);
+      return this.extractValueFromJsonPath(expression, context as string);
     } else if (expression.startsWith('{{') && expression.endsWith('}}')) {
       // Simple variable reference
       const varName = expression.slice(2, -2).trim();
@@ -67,7 +67,7 @@ export class ResponseProcessor {
     }
   }
   
-  private extractValueFromJsonPath(jsonPath: string, json: any): string | number | boolean {
+  private extractValueFromJsonPath(jsonPath: string, json: string): string | number | boolean {
     const result = JSONPath({ path: jsonPath, json });
     if (!Array.isArray(result) || result.length === 0) {
       throw new Error(`JSONPath ${jsonPath} not found in response`);

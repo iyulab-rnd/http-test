@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-"use strict";
 
 import { run } from './cli';
 import * as fs from 'fs';
