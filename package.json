@@ -1,6 +1,6 @@
 {
   "name": "@iyulab/http-test",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "You can perform tests utilizing HTTP extension files.",
   "author": {
     "name": "iyulab",
@@ -10,17 +10,15 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/iyulab-rnd/http-test"
+    "url": "git+https://github.com/iyulab-rnd/http-test.git"
   },
-  "main": "src/index.js",
-  "types": "src/index.d.ts",
+  "type": "module",
   "bin": {
     "http-test": "src/program.js"
   },
   "dependencies": {
     "axios": "^1.7.3",
-    "jsonpath-plus": "^9.0.0",
-    "tslib": "^2.6.3"
+    "jsonpath-plus": "^9.0.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

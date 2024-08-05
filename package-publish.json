@@ -1,5 +1,8 @@
 {
-    "main": "bundle.js",
-    "module": "bundle.js",
-    "types": "src/index.d.ts"
+  "main": "bundle.js",
+  "module": "bundle.js",
+  "types": "index.d.ts",
+  "bin": {
+    "http-test": "program.js"
   }
+}
