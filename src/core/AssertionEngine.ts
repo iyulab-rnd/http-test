@@ -61,10 +61,43 @@ export class AssertionEngine {
           `Status ${response.status} does not meet the assertion criteria`
         );
       }
-    } else if (response.status !== assertion.value) {
-      throw new AssertionError(
-        `Expected status ${assertion.value}, got ${response.status}`
-      );
+    } else if (typeof assertion.value === "string") {
+      const statusRange = assertion.value.toLowerCase();
+      if (statusRange === "2xx") {
+        if (response.status < 200 || response.status >= 300) {
+          throw new AssertionError(
+            `Expected status in 2xx range, got ${response.status}`
+          );
+        }
+      } else if (statusRange === "3xx") {
+        if (response.status < 300 || response.status >= 400) {
+          throw new AssertionError(
+            `Expected status in 3xx range, got ${response.status}`
+          );
+        }
+      } else if (statusRange === "4xx") {
+        if (response.status < 400 || response.status >= 500) {
+          throw new AssertionError(
+            `Expected status in 4xx range, got ${response.status}`
+          );
+        }
+      } else if (statusRange === "5xx") {
+        if (response.status < 500 || response.status >= 600) {
+          throw new AssertionError(
+            `Expected status in 5xx range, got ${response.status}`
+          );
+        }
+      } else {
+        throw new AssertionError(`Invalid status range: ${statusRange}`);
+      }
+    } else if (typeof assertion.value === "number") {
+      if (response.status !== assertion.value) {
+        throw new AssertionError(
+          `Expected status ${assertion.value}, got ${response.status}`
+        );
+      }
+    } else {
+      throw new AssertionError("Invalid assertion value for status");
     }
   }
 

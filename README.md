@@ -2,6 +2,12 @@
 
 http-test is a powerful and user-friendly API testing library that allows you to easily write and execute API tests using simple .http files. With http-test, you can streamline your API testing process and ensure the reliability of your endpoints without writing complex test scripts.
 
+## VS Code Extension
+
+For an even easier experience, use the [http-test VS Code Extension](https://marketplace.visualstudio.com/items?itemName=iyulab.http-test). This extension provides seamless integration with Visual Studio Code, allowing you to run and manage your http-test files directly from the editor.
+
+![VS Code Extension Screenshot](screenshot.png)
+
 ## Features
 
 - Write tests in easy-to-read .http files
@@ -12,14 +18,6 @@ http-test is a powerful and user-friendly API testing library that allows you to
 - File upload testing support
 - Detailed test reports and summaries
 
-## Installation
-
-Install http-test using npm:
-
-```bash
-npm install http-test -g
-```
-
 ## Quick Start
 
 1. Create a .http file with your API tests (see [full example](tests/test_server.http))
@@ -27,6 +25,14 @@ npm install http-test -g
 2. Run the tests:
 
 ```bash
+npx http-test path/to/your/tests.http
+```
+
+## Install
+
+```bash
+npm install @iyulab/http-test -g
+
 http-test path/to/your/tests.http
 ```
 

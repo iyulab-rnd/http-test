@@ -204,7 +204,15 @@ export class HttpFileParser {
 
   private parseAssertion(key: string, value: string): Assertion | null {
     if (key.toLowerCase() === "status") {
-      return { type: "status", value: parseInt(value, 10) };
+      const statusValue = value.trim().toLowerCase();
+      if (["2xx", "3xx", "4xx", "5xx"].includes(statusValue)) {
+        return { type: "status", value: statusValue };
+      }
+      const statusCode = parseInt(value, 10);
+      if (!isNaN(statusCode)) {
+        return { type: "status", value: statusCode };
+      }
+      return null;
     } else if (key.toLowerCase() === "content-type") {
       return { type: "header", key: "Content-Type", value };
     } else if (key.toLowerCase() === "body") {

@@ -83,23 +83,3 @@ async function handleError(error: unknown): Promise<void> {
   }
   process.exit(1);
 }
-
-// CLI entry point
-if (require.main === module) {
-  const args = process.argv.slice(2);
-  const filePath = args[0];
-  const options: RunOptions = {
-    verbose: args.includes("--verbose"),
-    var: args.find((arg) => arg.startsWith("--var="))?.split("=")[1],
-  };
-
-  if (!filePath) {
-    console.error("Please provide a file path");
-    process.exit(1);
-  }
-
-  run(filePath, options).catch((error) => {
-    console.error("Unhandled error:", error);
-    process.exit(1);
-  });
-}

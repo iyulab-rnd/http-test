@@ -1,7 +1,7 @@
 {
   "name": "@iyulab/http-test",
-  "version": "1.0.6",
-  "description": "You can perform tests utilizing HTTP extension files.",
+  "version": "1.0.9",
+  "description": "API testing library, by .http files, Automatic assertion",
   "author": {
     "name": "iyulab",
     "url": "https://www.iyulab.com"

@@ -4,7 +4,7 @@
 GET {{host}}/users
 
 #### Assert: Check all users
-Status: 200
+Status: 2xx
 Content-Type: application/json
 Body:
 $[0].id: 1
@@ -262,7 +262,7 @@ $.userId: 1
 GET {{host}}/posts/{{newPostId}}/comments
 
 #### Assert: Verify new comment
-Status: 200
+Status: 2xx
 Content-Type: application/json
 Body:
 $[0].body: This is a comment
