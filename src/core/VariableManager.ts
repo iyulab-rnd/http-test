@@ -13,12 +13,12 @@ export class VariableManager {
     return replaceVariablesInString(content, this.variables);
   }
 
-  setVariable(key: string, value: any): void {
+  setVariable(key: string, value: string | number | boolean): void {
     this.variables[key] = value;
     logVerbose(`Set variable: ${key} = ${value}`);
   }
-
-  getVariable(key: string): any | undefined {
+  
+  getVariable(key: string): string | number | boolean | undefined {
     return this.variables[key];
   }
 

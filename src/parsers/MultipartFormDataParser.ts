@@ -1,8 +1,6 @@
 import { logVerbose } from '../utils/logger';
 import { ContentTypeParser, ParserContext } from './ContentTypeParser';
 import FormData from 'form-data';
-import { createReadStream } from 'fs';
-import { basename } from 'path';
 
 export class MultipartFormDataParser implements ContentTypeParser {
   private bodyBuffer: string[] = [];
@@ -10,7 +8,7 @@ export class MultipartFormDataParser implements ContentTypeParser {
 
   constructor(private context: ParserContext) {}
 
-  parseBody(body: string, boundary?: string): any {
+  parseBody(body: string, boundary?: string): FormData | string {
     if (!boundary) return body;
   
     const formData = new FormData();
@@ -25,8 +23,10 @@ export class MultipartFormDataParser implements ContentTypeParser {
           if (filenameMatch && filenameMatch[1]) {
             // 파일 업로드 처리
             const filename = filenameMatch[1];
+            const contentTypeMatch = headerSection.match(/Content-Type: (.+)/);
+            const contentType = contentTypeMatch ? contentTypeMatch[1].trim() : 'application/octet-stream';
             const buffer = Buffer.from(content, 'binary');
-            formData.append(nameMatch[1], buffer, { filename });
+            formData.append(nameMatch[1], buffer, { filename, contentType });
           } else {
             formData.append(nameMatch[1], content);
           }

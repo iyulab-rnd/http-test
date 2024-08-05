@@ -19,8 +19,8 @@ import {
   log,
   setVerbose,
   logError,
-  logVerbose,
 } from "../utils/logger";
+import path from "path";
 
 export class TestManager {
   private requestExecutor: RequestExecutor;
@@ -29,9 +29,10 @@ export class TestManager {
   private variableManager: VariableManager;
   private assertionEngine: AssertionEngine;
 
-  constructor(private baseDir: string) {
+  constructor(httpFilePath: string) {
+    const baseDir = path.dirname(httpFilePath);
     this.variableManager = new VariableManager();
-    this.assertionEngine = new AssertionEngine(this.variableManager, this.baseDir);
+    this.assertionEngine = new AssertionEngine(this.variableManager, baseDir);
     this.requestExecutor = new RequestExecutor(this.variableManager);
     this.responseProcessor = new ResponseProcessor(this.variableManager);
     this.resultCollector = new TestResultCollector();
@@ -52,7 +53,7 @@ export class TestManager {
     }
 
     const summary = this.resultCollector.getSummary();
-    logTestSummary(summary);
+    await logTestSummary(summary);
 
     return this.resultCollector.getResults();
   }
@@ -63,12 +64,14 @@ export class TestManager {
       const response = await this.requestExecutor.execute(request);
       await this.responseProcessor.process(response, request.variableUpdates);
       const testResults = await this.runTests(request, response);
-      testResults.forEach((result) => {
+      for (const result of testResults) {
         this.resultCollector.addResult(result);
         logTestResult(result);
-      });
+      }
     } catch (error) {
-      const errorMessage = `Request failed: ${request.name}\n${error instanceof Error ? error.message : String(error)}`;
+      const errorMessage = `Request failed: ${request.name}\n${
+        error instanceof Error ? error.message : String(error)
+      }`;
       logError(errorMessage);
       this.resultCollector.addResult({
         name: request.name,
@@ -78,11 +81,17 @@ export class TestManager {
       });
     }
   }
-  
-  private async runTests(request: HttpRequest, response: HttpResponse): Promise<TestResult[]> {
-    const tests = request.tests.length > 0 ? request.tests : [this.createDefaultStatusCodeTest()];
+
+  private async runTests(
+    request: HttpRequest,
+    response: HttpResponse
+  ): Promise<TestResult[]> {
+    const tests =
+      request.tests.length > 0
+        ? request.tests
+        : [this.createDefaultStatusCodeTest()];
     const results: TestResult[] = [];
-  
+
     for (const test of tests) {
       try {
         for (const assertion of test.assertions) {
@@ -90,13 +99,15 @@ export class TestManager {
         }
         results.push(this.createTestResult(test, request, response, true));
       } catch (error) {
-        results.push(this.createTestResult(test, request, response, false, error));
+        results.push(
+          this.createTestResult(test, request, response, false, error)
+        );
       }
     }
-  
+
     return results;
   }
-  
+
   private createTestResult(
     test: TestItem,
     request: HttpRequest,
@@ -104,9 +115,10 @@ export class TestManager {
     passed: boolean,
     error?: unknown
   ): TestResult {
+    const expectedErrorPassed = request.expectError && !passed;
     return {
       name: test.name || request.name,
-      passed,
+      passed: expectedErrorPassed || passed,
       statusCode: response.status,
       error: passed
         ? undefined
@@ -115,7 +127,7 @@ export class TestManager {
         : new Error(String(error)),
     };
   }
-  
+
   private createDefaultStatusCodeTest(): TestItem {
     return {
       type: "Assert",

@@ -1,6 +1,9 @@
 module.exports = function(response, context) {
   const body = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
 
+  console.log(body);
+  console.log(context.variables);
+
   // Check if the user ID matches the userId given in context
   // console.log(body);
   // console.log(context.variables);

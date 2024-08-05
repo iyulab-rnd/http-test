@@ -1,3 +1,5 @@
+import FormData from "form-data";
+
 export interface RunOptions {
   verbose?: boolean;
   var?: string;
@@ -10,9 +12,10 @@ export interface HttpRequest {
   method: HttpMethod;
   url: string;
   headers: Record<string, string>;
-  body?: string;
+  body?: string | FormData | object;
   tests: TestItem[];
   variableUpdates: VariableUpdate[];
+  expectError?: boolean;
 }
 
 export interface VariableUpdate {
@@ -45,18 +48,26 @@ export type AssertionType = "status" | "header" | "body" | "custom";
 export interface Assertion {
   type: AssertionType;
   key?: string;
-  value?: any | ((value: any) => boolean);
+  value?: unknown | ((value: unknown) => boolean);
   customFunction?: string;
 }
 
 export interface Variables {
-  [key: string]: string;
+  [key: string]: string | number | boolean;
+}
+
+export interface VariableManager {
+  setVariables(variables: Variables): void;
+  replaceVariables(content: string): string;
+  setVariable(key: string, value: string | number | boolean): void;
+  getVariable(key: string): string | number | boolean | undefined;
+  getAllVariables(): Variables;
 }
 
 export interface HttpResponse {
   status: number;
   headers: Record<string, string>;
-  data: any;
+  data: unknown;
 }
 
 export interface CustomValidatorContext {
@@ -64,15 +75,10 @@ export interface CustomValidatorContext {
   variables: Variables;
 }
 
-export type CustomValidatorFunction = (response: HttpResponse, context: CustomValidatorContext) => void;
-
-export interface VariableManager {
-  replaceVariables(content: string): string;
-  setVariable(key: string, value: string): void;
-  loadVariables(filePath: string): Promise<void>;
-  getVariable(key: string): string | undefined;
-  replaceVariablesWithJsonPath(content: string, json: any): string;
-}
+export type CustomValidatorFunction = (
+  response: HttpResponse,
+  context: CustomValidatorContext
+) => void;
 
 export interface FileUtils {
   readFile(filePath: string): Promise<string>;
@@ -88,5 +94,5 @@ export enum LogLevel {
   WARNING,
   ERROR,
   VERBOSE,
-  PLAIN
+  PLAIN,
 }

@@ -2,13 +2,22 @@ import axios, { AxiosError, AxiosRequestConfig } from "axios";
 import { HttpRequest, HttpResponse } from "../types";
 import { VariableManager } from "./VariableManager";
 import { convertAxiosResponse } from "../utils/httpUtils";
-import { logVerbose, logError } from "../utils/logger";
+import { logVerbose, logError, logWarning } from "../utils/logger";
 import FormData from "form-data";
 import { URL } from "url";
-import { createReadStream } from "fs";
-import { basename } from "path";
+import { RequestError } from "../errors/RequestError";
 
+/**
+ * Executes HTTP requests and processes responses.
+ */
 export class RequestExecutor {
+  private serverCheckTimeout = 5000;
+  private requestTimeout = 10000;
+
+  /**
+   * Creates an instance of RequestExecutor.
+   * @param variableManager - The VariableManager instance to use.
+   */
   constructor(private variableManager: VariableManager) {}
 
   async execute(request: HttpRequest): Promise<HttpResponse> {
@@ -18,7 +27,7 @@ export class RequestExecutor {
     );
 
     try {
-      this.validateUrl(processedRequest.url);
+      await this.validateUrl(processedRequest.url);
       await this.checkServerStatus(processedRequest.url);
       const axiosResponse = await this.sendRequest(processedRequest);
       return convertAxiosResponse(axiosResponse);
@@ -27,28 +36,8 @@ export class RequestExecutor {
     }
   }
 
-  private validateUrl(url: string): void {
-    try {
-      new URL(url);
-    } catch (error) {
-      throw new Error(`Invalid URL: ${url}`);
-    }
-  }
-
-  private async checkServerStatus(url: string): Promise<void> {
-    try {
-      await axios.get(url, { timeout: 5000 });
-    } catch (error) {
-      if (axios.isAxiosError(error) && !error.response) {
-        throw new Error(
-          `Server is not responding at ${url}. Please check if the server is running.`
-        );
-      }
-    }
-  }
-
   private applyVariables(request: HttpRequest): HttpRequest {
-    const updatedRequest = {
+    return {
       ...request,
       url: this.variableManager.replaceVariables(request.url),
       headers: Object.fromEntries(
@@ -57,46 +46,106 @@ export class RequestExecutor {
           this.variableManager.replaceVariables(value),
         ])
       ),
+      body:
+        typeof request.body === "string"
+          ? this.variableManager.replaceVariables(request.body)
+          : request.body,
     };
-
-    if (typeof updatedRequest.body === 'string') {
-      updatedRequest.body = this.variableManager.replaceVariables(updatedRequest.body);
-    }
-    
-    return updatedRequest;
   }
 
-  private async sendRequest(request: HttpRequest) {
-    const { method, url, headers, body } = request;
-  
-    let data: any = body;
-    let formHeaders = {};
-  
-    const contentType = headers['Content-Type'] || headers['content-type'];
-    if (contentType) {
-      if (contentType.includes('application/json')) {
-        data = this.parseJsonBody(body);
-      } else if (contentType.includes('multipart/form-data')) {
-        const { formData, headers: multipartHeaders } = this.createMultipartFormData(body);
-        data = formData;
-        formHeaders = multipartHeaders;
+  private async validateUrl(url: string): Promise<void> {
+    try {
+      new URL(url);
+    } catch {
+      throw new RequestError(`Invalid URL: ${url}`);
+    }
+  }
+
+  private async checkServerStatus(url: string): Promise<void> {
+    try {
+      await axios.get(url, { timeout: this.serverCheckTimeout });
+    } catch (error) {
+      if (axios.isAxiosError(error) && !error.response) {
+        throw new RequestError(
+          `Server is not responding at ${url}. Please check if the server is running.`
+        );
       }
     }
-  
+  }
+
+  /**
+   * Sends an HTTP request.
+   * @param request - The HttpRequest to send.
+   * @returns A promise that resolves to an AxiosResponse.
+   */
+  private async sendRequest(request: HttpRequest) {
+    const { method, url, headers, body } = request;
+
+    let data = body;
+    let formHeaders = {};
+
+    const contentType = headers["Content-Type"] || headers["content-type"];
+    if (contentType) {
+      if (contentType.includes("application/json")) {
+        data = this.parseJsonBody(body as string);
+      } else if (contentType.includes("multipart/form-data")) {
+        const formData = new FormData();
+        const boundary = contentType.split("boundary=")[1];
+        if (body) {
+          var bodyText = body as string;
+          const parts = bodyText.split(`--${boundary}`);
+          parts.forEach((part) => {
+            if (part.trim() && !part.includes("--")) {
+              const [headerSection, ...contentSections] =
+                part.split("\r\n\r\n");
+              const content = contentSections.join("\r\n\r\n").trim();
+              const nameMatch = headerSection.match(/name="([^"]+)"/);
+              const filenameMatch = headerSection.match(/filename="([^"]+)"/);
+              if (nameMatch && nameMatch[1]) {
+                if (filenameMatch && filenameMatch[1]) {
+                  const filename = filenameMatch[1];
+                  const contentTypeMatch =
+                    headerSection.match(/Content-Type: (.+)/);
+                  const fileContentType = contentTypeMatch
+                    ? contentTypeMatch[1].trim()
+                    : "application/octet-stream";
+                  const buffer = Buffer.from(content, "binary");
+                  formData.append(nameMatch[1], buffer, {
+                    filename,
+                    contentType: fileContentType,
+                  });
+                } else {
+                  formData.append(nameMatch[1], content);
+                }
+              }
+            }
+          });
+        } else {
+          logWarning(
+            "Request body is undefined for multipart/form-data request"
+          );
+        }
+        data = formData;
+        formHeaders = formData.getHeaders();
+      }
+    }
+
     const config: AxiosRequestConfig = {
       method,
       url,
       headers: { ...headers, ...formHeaders },
       data,
-      timeout: 10000,
-      validateStatus: (status) => true,
+      timeout: this.requestTimeout,
+      validateStatus: () => true,
     };
-  
-    logVerbose(`Sending request with config: ${JSON.stringify(config, null, 2)}`);
+
+    logVerbose(
+      `Sending request with config: ${JSON.stringify(config, null, 2)}`
+    );
     return axios(config);
   }
-  
-  private parseJsonBody(body: string | undefined): any {
+
+  private parseJsonBody(body: string | undefined): object | undefined {
     if (!body) return undefined;
     body = body.trim();
     try {
@@ -104,22 +153,29 @@ export class RequestExecutor {
     } catch (error) {
       logError(`Failed to parse JSON body: ${error}`);
       logVerbose(`Raw body content: ${body}`);
-      // Return an empty object instead of the raw body to prevent further errors
       return {};
     }
   }
 
-  private createMultipartFormData(body: string | undefined): { formData: FormData, headers: Record<string, string> } {
+  /**
+   * Creates a multipart form data object.
+   * @param body - The body content.
+   * @returns An object containing the FormData and headers.
+   */
+  private createMultipartFormData(body: string | undefined): {
+    formData: FormData;
+    headers: Record<string, string>;
+  } {
     const formData = new FormData();
-    const lines = body?.split('\n') || [];
+    const lines = body?.split("\n") || [];
     let currentName: string | null = null;
     let currentFilename: string | null = null;
     let currentContentType: string | null = null;
     let isFile = false;
-    let fileContent = '';
+    let fileContent = "";
 
     for (const line of lines) {
-      if (line.startsWith('Content-Disposition:')) {
+      if (line.startsWith("Content-Disposition:")) {
         const nameMatch = line.match(/name="([^"]+)"/);
         const filenameMatch = line.match(/filename="([^"]+)"/);
         if (nameMatch) {
@@ -131,52 +187,52 @@ export class RequestExecutor {
         } else {
           isFile = false;
         }
-      } else if (line.startsWith('Content-Type:')) {
-        currentContentType = line.split(':')[1].trim();
-      } else if (line.trim() === '' && currentName) {
+      } else if (line.startsWith("Content-Type:")) {
+        currentContentType = line.split(":")[1].trim();
+      } else if (line.trim() === "" && currentName) {
         if (isFile) {
-          fileContent = '';
+          fileContent = "";
         }
       } else if (currentName) {
         if (isFile) {
-          fileContent += line + '\n';
+          fileContent += line + "\n";
         } else {
           formData.append(currentName, line.trim());
           currentName = null;
         }
       }
 
-      if (currentName && isFile && line.trim() === '' && fileContent) {
+      if (currentName && isFile && line.trim() === "" && fileContent) {
         const buffer = Buffer.from(fileContent);
         formData.append(currentName, buffer, {
-          filename: currentFilename || 'file',
-          contentType: currentContentType || 'application/octet-stream',
+          filename: currentFilename || "file",
+          contentType: currentContentType || "application/octet-stream",
         });
         currentName = null;
         currentFilename = null;
         currentContentType = null;
         isFile = false;
-        fileContent = '';
+        fileContent = "";
       }
     }
 
     return { formData, headers: formData.getHeaders() };
   }
 
-  private handleRequestError(
+  private async handleRequestError(
     error: unknown,
     request: HttpRequest
-  ): HttpResponse {
+  ): Promise<HttpResponse> {
     if (axios.isAxiosError(error)) {
       const axiosError = error as AxiosError;
       if (axiosError.response) {
-        logError(
+        await logError(
           `Request failed with status ${axiosError.response.status}: ${axiosError.message}`
         );
         return convertAxiosResponse(axiosError.response);
       } else if (axiosError.request) {
-        logError(`No response received: ${axiosError.message}`);
-        throw new Error(
+        await logError(`No response received: ${axiosError.message}`);
+        throw new RequestError(
           `No response received from ${request.url}. Please check your network connection and server status.`
         );
       }
@@ -186,7 +242,7 @@ export class RequestExecutor {
         error instanceof Error ? error.message : String(error)
       }`
     );
-    throw new Error(
+    throw new RequestError(
       `Request to ${request.url} failed: ${
         error instanceof Error ? error.message : String(error)
       }`
