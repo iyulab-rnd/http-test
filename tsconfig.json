@@ -3,7 +3,7 @@
     "target": "ESNext",
     "module": "ESNext",
     "preserveValueImports": false,
-    "lib": ["ESNext"],
+    "lib": ["ESNext", "DOM"],
     "strict": true,
     "esModuleInterop": true,
 
@@ -20,11 +20,16 @@
     "noEmit": false,
     "declaration": true,
     "emitDeclarationOnly": true,
-    "outDir": "types"
+    "outDir": "types",
+
+    "forceConsistentCasingInFileNames": true,
   },
-  "include": ["src"],
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules"],
   "ts-node": {
-    "esm": true,
-    "experimentalSpecifierResolution": "node",
+    "ts-node": {
+      "esm": true,
+      "experimentalSpecifierResolution": "node"
+    }
   }
 }

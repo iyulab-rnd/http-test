@@ -11,26 +11,12 @@ import { loadCustomValidator } from "../validators/customValidator";
 import path from "path";
 import { AssertionError } from "../errors/AssertionError";
 
-/**
- * Handles the assertion logic for HTTP responses.
- */
 export class AssertionEngine {
-  /**
-   * Creates an instance of AssertionEngine.
-   * @param variableManager - The VariableManager instance to use.
-   * @param baseDir - The base directory for resolving paths.
-   */
   constructor(
     private variableManager: VariableManager,
     private baseDir: string
   ) {}
 
-  /**
-   * Asserts the given assertion against the HTTP response.
-   * @param assertion - The assertion to check.
-   * @param response - The HTTP response to assert against.
-   * @param request - The original HTTP request.
-   */
   async assert(
     assertion: Assertion,
     response: HttpResponse,
@@ -68,11 +54,6 @@ export class AssertionEngine {
     }
   }
 
-  /**
-   * Asserts the status code of the response.
-   * @param assertion - The status assertion.
-   * @param response - The HTTP response.
-   */
   private assertStatus(assertion: Assertion, response: HttpResponse): void {
     if (typeof assertion.value === "function") {
       if (!assertion.value(response.status)) {
@@ -87,11 +68,6 @@ export class AssertionEngine {
     }
   }
 
-  /**
-   * Asserts a header in the response.
-   * @param assertion - The header assertion.
-   * @param response - The HTTP response.
-   */
   private assertHeader(assertion: Assertion, response: HttpResponse): void {
     if (!assertion.key) {
       throw new AssertionError("Header key is missing in assertion");
@@ -115,11 +91,6 @@ export class AssertionEngine {
     }
   }
 
-  /**
-   * Asserts the Content-Type header.
-   * @param actual - The actual Content-Type value.
-   * @param expected - The expected Content-Type value.
-   */
   private assertContentType(actual: string, expected: string): void {
     const expectedType = expected.split(";")[0].trim();
     const actualType = actual.split(";")[0].trim();
@@ -130,26 +101,11 @@ export class AssertionEngine {
     }
   }
 
-  /**
-   * Asserts the body of the response.
-   * @param assertion - The body assertion.
-   * @param response - The HTTP response.
-   */
   private async assertBody(
     assertion: Assertion,
     response: HttpResponse
   ): Promise<void> {
-    let responseData = response.data;
-
-    if (typeof responseData === "string" && responseData.trim() !== "") {
-      try {
-        responseData = JSON.parse(responseData);
-      } catch (error) {
-        throw new AssertionError(
-          `Failed to parse response data as JSON: ${error}`
-        );
-      }
-    }
+    let responseData = this.parseResponseData(response.data);
 
     if (assertion.key === "$") {
       return;
@@ -157,39 +113,46 @@ export class AssertionEngine {
       typeof assertion.key === "string" &&
       assertion.key.startsWith("$")
     ) {
-      if (!responseData) {
-        throw new AssertionError(
-          "Response body is empty, cannot perform JSON path assertion"
-        );
-      }
-      const jsonPath = this.adjustJsonPath(assertion.key, responseData);
-      const result = JSONPath({ path: jsonPath, json: responseData });
-      if (result.length === 0) {
-        throw new AssertionError(
-          `JSON path ${jsonPath} not found in response: ${JSON.stringify(
-            responseData
-          )}`
-        );
-      }
-      const actualValue = result[0];
-      const expectedValue = this.parseValue(assertion.value as string);
-      if (!this.isEqual(actualValue, expectedValue)) {
-        throw new AssertionError(
-          `Expected ${jsonPath} to be ${JSON.stringify(
-            expectedValue
-          )}, got ${JSON.stringify(actualValue)}`
-        );
-      }
+      this.assertJsonPath(assertion, responseData);
     } else {
       throw new AssertionError(`Invalid body assertion key: ${assertion.key}`);
     }
   }
 
-  /**
-   * Parses the value of an assertion.
-   * @param value - The value to parse.
-   * @returns The parsed value.
-   */
+  private parseResponseData(data: unknown): object {
+    if (typeof data === "string" && data.trim() !== "") {
+      try {
+        return JSON.parse(data);
+      } catch (error) {
+        throw new AssertionError(
+          `Failed to parse response data as JSON: ${error}`
+        );
+      }
+    }
+    return data as object;
+  }
+
+  private assertJsonPath(assertion: Assertion, responseData: object): void {
+    const jsonPath = this.adjustJsonPath(assertion.key as string, responseData);
+    const result = JSONPath({ path: jsonPath, json: responseData });
+    if (result.length === 0) {
+      throw new AssertionError(
+        `JSON path ${jsonPath} not found in response: ${JSON.stringify(
+          responseData
+        )}`
+      );
+    }
+    const actualValue = result[0];
+    const expectedValue = this.parseValue(assertion.value as string);
+    if (!this.isEqual(actualValue, expectedValue)) {
+      throw new AssertionError(
+        `Expected ${jsonPath} to be ${JSON.stringify(
+          expectedValue
+        )}, got ${JSON.stringify(actualValue)}`
+      );
+    }
+  }
+
   private parseValue(
     value: string | number | boolean
   ): string | number | boolean {
@@ -245,12 +208,6 @@ export class AssertionEngine {
     return actual === expected;
   }
 
-  /**
-   * Asserts using a custom validator function.
-   * @param assertion - The custom assertion.
-   * @param response - The HTTP response.
-   * @param request - The original HTTP request.
-   */
   private async assertCustom(
     assertion: Assertion,
     response: HttpResponse,
@@ -285,12 +242,6 @@ export class AssertionEngine {
     }
   }
 
-  /**
-   * Runs a custom validator function.
-   * @param customFunctionPath - The path to the custom validator function.
-   * @param response - The HTTP response.
-   * @param request - The original HTTP request.
-   */
   private async runCustomValidator(
     customFunctionPath: string,
     response: HttpResponse,
@@ -316,11 +267,6 @@ export class AssertionEngine {
     }
   }
 
-  /**
-   * Resolves the path of a custom validator function.
-   * @param customFunctionPath - The path to resolve.
-   * @returns The resolved path.
-   */
   private resolvePath(customFunctionPath: string): string {
     if (path.isAbsolute(customFunctionPath)) {
       return customFunctionPath;
