@@ -26,12 +26,6 @@ function runHttpTest(uri: vscode.Uri | undefined, verbose: boolean) {
         if (stdout) {
             outputChannel.appendLine(stdout);
         }
-        if (stderr) {
-            outputChannel.appendLine(`Stderr: ${stderr}`);
-        }
-        if (err) {
-            outputChannel.appendLine(`Error: ${err.message}`);
-        }
         outputChannel.appendLine('HTTP Test completed.');
     });
 }
