@@ -1,4 +1,5 @@
 module.exports = function(response, context) {
+  
   const body = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
 
   console.log(body);

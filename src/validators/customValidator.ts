@@ -6,23 +6,26 @@ export async function loadCustomValidator(
   functionPath: string
 ): Promise<(response: HttpResponse, context: CustomValidatorContext) => void> {
   const script = await readFile(functionPath);
-
-  // We use 'any' here because we're dealing with a dynamically created context
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const context: any = {
+  
+  const sandbox = {
     module: { exports: {} },
-    require,
+    require: (moduleName: string) => {
+      if (['path', 'fs', 'http'].includes(moduleName)) {
+        return require(moduleName);
+      }
+      throw new Error(`Module ${moduleName} is not allowed`);
+    },
     console,
   };
 
-  vm.createContext(context);
-  vm.runInContext(script, context);
+  vm.createContext(sandbox);
+  vm.runInContext(script, sandbox);
 
-  if (typeof context.module.exports !== "function") {
+  if (typeof sandbox.module.exports !== "function") {
     throw new Error("Custom validator must export a function");
   }
 
-  return context.module.exports as (
+  return sandbox.module.exports as (
     response: HttpResponse,
     context: CustomValidatorContext
   ) => void;

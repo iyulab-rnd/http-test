@@ -4,6 +4,7 @@ export declare class HttpFileParser {
     private variableManager;
     constructor(variableManager: VariableManager);
     parse(filePath: string): Promise<HttpRequest[]>;
+    private removeComments;
     private splitIntoSections;
     private parseRequests;
     private handleGlobalVariables;

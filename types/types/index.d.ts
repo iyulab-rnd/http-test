@@ -40,7 +40,6 @@ export interface Assertion {
     type: AssertionType;
     key?: string;
     value?: unknown | ((value: unknown) => boolean) | string;
-    customFunction?: string;
 }
 export interface Variables {
     [key: string]: string | number | boolean;

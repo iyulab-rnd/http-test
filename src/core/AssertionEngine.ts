@@ -26,10 +26,8 @@ export class AssertionEngine {
       assertion.value = this.variableManager.replaceVariables(assertion.value);
     }
 
-    logVerbose(
-      `Asserting ${JSON.stringify(assertion)}`
-    );
-    
+    logVerbose(`Asserting ${JSON.stringify(assertion)}`);
+
     switch (assertion.type) {
       case "status":
         this.assertStatus(assertion, response);
@@ -41,9 +39,7 @@ export class AssertionEngine {
         await this.assertBody(assertion, response);
         break;
       case "custom":
-        if (assertion.customFunction) {
-          await this.assertCustom(assertion, response, request);
-        }
+        await this.assertCustom(assertion, response, request);
         break;
       default:
         throw new AssertionError(
@@ -244,17 +240,14 @@ export class AssertionEngine {
     response: HttpResponse,
     request: HttpRequest
   ): Promise<void> {
-    if (!assertion.customFunction) {
-      throw new AssertionError(
-        "Custom function path is not provided for custom assertion"
-      );
-    }
+    const functionPath = assertion.value as string;
+    
     try {
       logVerbose(
-        `Running custom validator script: ${assertion.customFunction}`
+        `Running custom validator script: ${functionPath}`
       );
       await this.runCustomValidator(
-        assertion.customFunction,
+        functionPath,
         response,
         request
       );
@@ -280,10 +273,12 @@ export class AssertionEngine {
   ): Promise<void> {
     const resolvedPath = this.resolvePath(customFunctionPath);
     const customValidator = await loadCustomValidator(resolvedPath);
+    
     const context: CustomValidatorContext = {
       request,
       variables: this.variableManager.getAllVariables(),
     };
+    
     try {
       logVerbose(`Executing custom validator from path: ${resolvedPath}`);
       customValidator(response, context);

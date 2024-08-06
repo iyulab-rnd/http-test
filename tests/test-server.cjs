@@ -155,7 +155,11 @@ app.get('/users/:id/posts', (req, res) => {
 });
 
 app.post('/upload', upload.single('file'), (req, res) => {
-  res.status(201).json({ message: 'File uploaded successfully', filename: req.file.originalname });
+  if (req.file && req.file.size > 0) {
+    res.status(200).json({ message: 'File uploaded successfully', filename: req.file.originalname });
+  } else {
+    res.status(400).json({ error: 'No file uploaded or file is empty' });
+  }
 });
 
 app.post('/submitForm', upload.none(), (req, res) => {

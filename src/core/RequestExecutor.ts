@@ -6,6 +6,8 @@ import { logVerbose, logError } from "../utils/logger";
 import { URL } from "url";
 import { RequestError } from "../errors/RequestError";
 import FormData from "form-data";
+import fs from "fs";
+import path from "path";
 
 /**
  * Executes HTTP requests and processes responses.
@@ -18,13 +20,11 @@ export class RequestExecutor {
    * Creates an instance of RequestExecutor.
    * @param variableManager - The VariableManager instance to use.
    */
-  constructor(private variableManager: VariableManager) {}
+  constructor(private variableManager: VariableManager, private baseDir: string) {}
 
   async execute(request: HttpRequest): Promise<HttpResponse> {
     const processedRequest = this.applyVariables(request);
-    logVerbose(
-      `Executing request: ${processedRequest.method} ${processedRequest.url}`
-    );
+    logVerbose(`Executing request: ${processedRequest.method} ${processedRequest.url}`);
 
     try {
       await this.validateUrl(processedRequest.url);
@@ -69,7 +69,7 @@ export class RequestExecutor {
 
   private async checkServerStatus(url: string): Promise<void> {
     try {
-      await axios.get(url, { timeout: this.serverCheckTimeout });
+      await axios.head(url, { timeout: this.serverCheckTimeout });
     } catch (error) {
       if (axios.isAxiosError(error) && !error.response) {
         throw new RequestError(
@@ -83,7 +83,7 @@ export class RequestExecutor {
     const { method, url, headers, body } = request;
 
     let data = body;
-    let requestHeaders = { ...headers }; // 복사본을 생성합니다.
+    let requestHeaders = { ...headers };
 
     const contentType = headers["Content-Type"] || headers["content-type"];
     if (contentType) {
@@ -93,7 +93,6 @@ export class RequestExecutor {
         const formData = this.parseFormData(headers, body as string);
         data = formData;
 
-        // 기존 Content-Type 헤더를 제거하고 formData의 헤더로 대체합니다.
         delete requestHeaders["Content-Type"];
         delete requestHeaders["content-type"];
         requestHeaders = {
@@ -157,7 +156,7 @@ export class RequestExecutor {
     return formData;
   }
 
-  buildFormData(formData: FormData, part: string) {
+  private buildFormData(formData: FormData, part: string) {
     const lines = part.split("\r\n");
     const headers: Record<string, string> = {};
     let name: string | null = null;
@@ -167,7 +166,7 @@ export class RequestExecutor {
 
     lines.forEach((line) => {
       if (line.trim().length === 0) return;
-      
+
       const headerMatch = line.match(/(.+?): (.+)/);
       if (headerMatch) {
         headers[headerMatch[1].toLowerCase()] = headerMatch[2];
@@ -211,9 +210,24 @@ export class RequestExecutor {
     if (contentType) {
       options.contentType = contentType;
     }
-    
-    const value = content;
-    formData.append(name, value, options);
+
+    if (filename && content) {
+      const [_, filePath] = (content as string).split(" ");
+
+      if (filePath) {
+        const absoluteFilePath = path.resolve(this.baseDir, filePath);
+        if (!fs.existsSync(absoluteFilePath)) {
+          throw new Error(filePath + " is not found.");
+        }
+        
+        formData.append(name, fs.createReadStream(absoluteFilePath), options);
+      } else {
+        throw new Error("Invalid file path format.");
+      }
+    } else {
+      const value = content!;
+      formData.append(name, value, options);
+    }
   }
 
   private async handleRequestError(

@@ -18,23 +18,15 @@ For an even easier experience, use the [http-test VS Code Extension](https://mar
 - File upload testing support
 - Detailed test reports and summaries
 
-## Quick Start
+## Installation
 
-1. Create a .http file with your API tests (see [full example](tests/test_server.http))
-
-2. Run the tests:
-
-```bash
-npx @iyulab/http-test path/to/your/tests.http
-```
-
-## Install
+Install http-test globally using npm:
 
 ```bash
 npm install @iyulab/http-test -g
 ```
 
-Once installed, you can simply run it with the command below.
+Once installed, run your tests with:
 
 ```bash
 http-test path/to/your/tests.http
@@ -45,27 +37,52 @@ http-test path/to/your/tests.http --verbose
 
 http-test uses a simple syntax for defining API tests in .http files:
 
-- Use `###` to start a new test case
-- Specify the HTTP method and URL on the next line
-- Add headers and request body as needed
-- Use `####` to define assertions
-- Assertions can check status codes, headers, and body content
+### Status Code Assertions
 
-Here's a more comprehensive example:
+Check the status code of the response:
 
 ```http
 ### GET all users
 GET {{host}}/users
 
-#### Assert: Check all users
+#### Assert: Check status code
+Status: 200
+```
+
+### Header Assertions
+
+Assert response headers:
+
+```http
+### GET all users
+GET {{host}}/users
+
+#### Assert: Check headers
+Status: 200
+Content-Type: application/json
+```
+
+### JSONPath Assertions
+
+Use JSONPath to assert specific values in the response body:
+
+```http
+### GET all users
+GET {{host}}/users
+
+#### Assert: Check response body
 Status: 200
 Content-Type: application/json
 Body:
 $[0].id: 1
 $[0].name: John Doe
-$[1].id: 2
-$[1].name: Jane Smith
+```
 
+### Setting Variables from Response
+
+Save values from the response to use in subsequent requests:
+
+```http
 ### POST new user
 POST {{host}}/users
 Content-Type: application/json
@@ -84,58 +101,68 @@ $.email: alice@example.com
 
 # Save new user ID to variable
 @newUserId = $.id
-
-### GET new user
-GET {{host}}/users/{{newUserId}}
-
-#### Assert: Verify new user
-Status: 200
-Content-Type: application/json
-Body:
-$.name: Alice Johnson
-$.email: alice@example.com
-
-### DELETE user
-DELETE {{host}}/users/{{newUserId}}
-
-#### Assert: Check user deletion
-Status: 204
-
-### Verify user deleted
-GET {{host}}/users/{{newUserId}}
-
-#### Assert: Verify user not found
-Status: 404
-Content-Type: application/json
-Body:
-$.error: User not found
 ```
 
-## Advanced Features
+### Custom Assertions with Scripts
 
-- **Variables**: Use `@variableName = value` to define variables and `{{variableName}}` to use them in requests
-- **File Uploads**: Test file uploads using multipart/form-data
-- **Custom Validators**: Write custom JavaScript functions for complex validations
+Write custom JavaScript functions for complex validations:
 
-For more advanced examples, check our [full test suite](tests/test_server.http).
+```javascript
+// custom-assert.js
+module.exports = function(response, context) {
+  const body = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
 
-## Example Output
+  if (body.id !== context.variables.newUserId) {
+    throw new Error("User ID mismatch");
+  }
 
-When you run your tests, http-test provides a detailed summary of the results:
-
+  if (!body.email.includes('@')) {
+    throw new Error("Invalid email format");
+  }
+};
 ```
-==================================================
-📊 Test Summary
-==================================================
-Total Tests: 24
-Passed Tests: 24
-Failed Tests: 0
 
-✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅
-  1. GET all users Assert: Check all users: ✅ PASS (Status: 200)
-  2. POST new user Assert: Check new user creation: ✅ PASS (Status: 201)
-  3. GET new user Assert: Verify new user: ✅ PASS (Status: 200)
-  4. DELETE user Assert: Check user deletion: ✅ PASS (Status: 204)
-  5. Verify user deleted Assert: Verify user not found: ✅ PASS (Status: 404)
-  ...
+Use the custom assertion in your .http file:
+
+```http
+### Custom Assert user verification 
+GET {{host}}/users/{{newUserId}}
+
+#### Assert: Verify user format
+Status: 2xx
+_CustomAssert: ./custom-assert.js
+```
+
+### File Uploads
+
+Test file uploads using `multipart/form-data`:
+
+```http
+### Upload file
+POST {{host}}/upload
+Content-Type: multipart/form-data; boundary=---boundary
+Content-Disposition: form-data; name="file"; filename="example.txt"
+
+This is the content of the file.
+```
+
+### Using External Variable Files
+
+Manage variables using a `variables.json` file:
+
+```json
+// variables.json
+{
+  "host": "http://localhost:3000",
+  "token": 123
+}
+```
+
+Reference these variables in your .http test files:
+
+```http
+@host = http://localhost:3000
+
+### GET all users
+GET {{host}}/users
 ```

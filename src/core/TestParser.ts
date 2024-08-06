@@ -8,21 +8,27 @@ export class TestParser {
     this.variableManager = variableManager;
   }
 
-  parse(lines: string[]): { tests: TestItem[], variableUpdates: { key: string, value: string }[] } {
+  parse(lines: string[]): {
+    tests: TestItem[];
+    variableUpdates: { key: string; value: string }[];
+  } {
     const tests: TestItem[] = [];
-    const variableUpdates: { key: string, value: string }[] = [];
+    const variableUpdates: { key: string; value: string }[] = [];
     let currentTest: TestItem | null = null;
     for (const line of lines) {
-      if (line.startsWith('#### ')) {
+      if (line.startsWith("#### ")) {
         if (currentTest) {
           tests.push(currentTest);
         }
         currentTest = this.createNewTest(line);
-      } else if (line.startsWith('@')) {
+      } else if (line.startsWith("@")) {
         // 변수 업데이트 라인 처리
-        const [key, value] = line.slice(1).split('=').map(s => s.trim());
+        const [key, value] = line
+          .slice(1)
+          .split("=")
+          .map((s) => s.trim());
         variableUpdates.push({ key, value });
-      } else if (currentTest && line.includes(':')) {
+      } else if (currentTest && line.includes(":")) {
         const assertion = this.parseAssertion(line);
         if (assertion) {
           currentTest.assertions.push(assertion);
@@ -40,37 +46,46 @@ export class TestParser {
   private createNewTest(line: string): TestItem {
     return {
       type: "Assert",
-      name: line.replace(/^####\s*/, '').trim(),
+      name: line.replace(/^####\s*/, "").trim(),
       assertions: [],
     };
   }
 
   private parseAssertion(line: string): Assertion | null {
-    const [key, ...valueParts] = line.split(':');
-    const value = valueParts.join(':').trim();
+    const [key, ...valueParts] = line.split(":");
+    const value = valueParts.join(":").trim();
     switch (key.trim().toLowerCase()) {
-      case 'status':
+      case "status":
         return this.parseStatusAssertion(value);
-      case 'content-type':
-        return { type: 'header', key: 'Content-Type', value };
-      case 'body':
+      case "content-type":
+        return { type: "header", key: "Content-Type", value };
+      case "body":
         return null;
+      case "_customassert":
+        return {
+          type: "custom",
+          value: this.variableManager.replaceVariables(value),
+        };
       default:
-        if (key.trim().startsWith('$')) {
-          return { type: 'body', key: key.trim(), value: this.parseValue(value) };
+        if (key.trim().startsWith("$")) {
+          return {
+            type: "body",
+            key: key.trim(),
+            value: this.parseValue(value),
+          };
         }
-        return { type: 'body', key: key.trim(), value };
+        return { type: "body", key: key.trim(), value };
     }
   }
-  
+
   private parseStatusAssertion(value: string): Assertion | null {
     const statusValue = value.trim().toLowerCase();
-    if (['2xx', '3xx', '4xx', '5xx'].includes(statusValue)) {
-      return { type: 'status', value: statusValue };
+    if (["2xx", "3xx", "4xx", "5xx"].includes(statusValue)) {
+      return { type: "status", value: statusValue };
     }
     const statusCode = parseInt(value, 10);
     if (!isNaN(statusCode)) {
-      return { type: 'status', value: statusCode };
+      return { type: "status", value: statusCode };
     }
     return null;
   }
@@ -78,9 +93,9 @@ export class TestParser {
   private parseValue(value: string): string | number | boolean {
     if (!isNaN(Number(value))) {
       return Number(value);
-    } else if (value.toLowerCase() === 'true') {
+    } else if (value.toLowerCase() === "true") {
       return true;
-    } else if (value.toLowerCase() === 'false') {
+    } else if (value.toLowerCase() === "false") {
       return false;
     }
     return this.variableManager.replaceVariables(value);

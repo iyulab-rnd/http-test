@@ -1,11 +1,11 @@
 import { LogLevel, TestSummary, HttpRequest, TestResult } from "../types";
 export declare function setVerbose(v: boolean): void;
-export declare function log(message: string, level?: LogLevel): void;
-export declare function logVerbose(message: string): void;
-export declare function logInfo(message: string): void;
-export declare function logWarning(message: string): void;
-export declare function logError(message: string): void;
-export declare function logPlain(message: string): void;
+export declare function log(message?: unknown, level?: LogLevel, ...optionalParams: unknown[]): void;
+export declare function logVerbose(message?: unknown, ...optionalParams: unknown[]): void;
+export declare function logInfo(message?: unknown, ...optionalParams: unknown[]): void;
+export declare function logWarning(message?: unknown, ...optionalParams: unknown[]): void;
+export declare function logError(message?: unknown, ...optionalParams: unknown[]): void;
+export declare function logPlain(message?: unknown, ...optionalParams: unknown[]): void;
 export declare function logRequestStart(request: HttpRequest): void;
 export declare function logTestResult(result: TestResult): void;
 export declare function logTestSummary(summary: TestSummary): void;

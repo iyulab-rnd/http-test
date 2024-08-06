@@ -5,24 +5,21 @@ import { VariableManager } from "./VariableManager";
  */
 export declare class RequestExecutor {
     private variableManager;
+    private baseDir;
     private serverCheckTimeout;
     private requestTimeout;
     /**
      * Creates an instance of RequestExecutor.
      * @param variableManager - The VariableManager instance to use.
      */
-    constructor(variableManager: VariableManager);
+    constructor(variableManager: VariableManager, baseDir: string);
     execute(request: HttpRequest): Promise<HttpResponse>;
     private applyVariables;
     private validateUrl;
     private checkServerStatus;
-    /**
-     * Sends an HTTP request.
-     * @param request - The HttpRequest to send.
-     * @returns A promise that resolves to an AxiosResponse.
-     */
     private sendRequest;
     private parseJsonBody;
     private parseFormData;
+    private buildFormData;
     private handleRequestError;
 }

@@ -34,7 +34,7 @@ export class TestManager {
     this.baseDir = path.dirname(httpFilePath);
     this.variableManager = new VariableManager();
     this.assertionEngine = new AssertionEngine(this.variableManager, this.baseDir);
-    this.requestExecutor = new RequestExecutor(this.variableManager);
+    this.requestExecutor = new RequestExecutor(this.variableManager, this.baseDir);
     this.responseProcessor = new ResponseProcessor(this.variableManager);
     this.resultCollector = new TestResultCollector();
   }

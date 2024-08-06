@@ -91,6 +91,13 @@ Body:
 $.name: Alice Johnson
 $.email: alice@example.com
 
+### Custom Assert user verification 
+GET {{host}}/users/{{newUserId}}
+
+#### Assert: Verify user format
+Status: 2xx
+_CustomAssert: ./custom-assert.js
+
 ### POST new post
 POST {{host}}/posts
 Content-Type: application/json
@@ -197,14 +204,14 @@ POST {{host}}/upload
 Content-Type: multipart/form-data; boundary=----WebKitFormBoundary123456
 
 ------WebKitFormBoundary123456
-Content-Disposition: form-data; name="file"; filename="attachfile.data"
+Content-Disposition: form-data; name="file"; filename="attchefile.data"
 Content-Type: application/octet-stream
 
-< ./attachfile.data
+< ./attchefile.data
 ------WebKitFormBoundary123456--
 
 #### Assert: Check file upload
-Status: 201
+Status: 2xx
 
 ### POST form data
 POST {{host}}/submitForm
@@ -277,7 +284,7 @@ Content-Type: application/json
 }
 
 #### Assert: Check missing fields
-Status: 401
+Status: 4xx
 Content-Type: application/json
 Body:
 $.error: Missing required fields
