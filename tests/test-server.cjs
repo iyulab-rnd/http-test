@@ -154,12 +154,10 @@ app.get('/users/:id/posts', (req, res) => {
   res.json(userPosts);
 });
 
-// 파일 업로드를 처리하는 라우트 추가
 app.post('/upload', upload.single('file'), (req, res) => {
   res.status(201).json({ message: 'File uploaded successfully', filename: req.file.originalname });
 });
 
-// FormData 데이터를 처리하는 라우트 추가
 app.post('/submitForm', upload.none(), (req, res) => {
   const newUser = {
     id: users.length + 1,

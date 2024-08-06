@@ -2,10 +2,10 @@ import axios, { AxiosError, AxiosRequestConfig } from "axios";
 import { HttpRequest, HttpResponse } from "../types";
 import { VariableManager } from "./VariableManager";
 import { convertAxiosResponse } from "../utils/httpUtils";
-import { logVerbose, logError, logWarning } from "../utils/logger";
-import FormData from "form-data";
+import { logVerbose, logError } from "../utils/logger";
 import { URL } from "url";
 import { RequestError } from "../errors/RequestError";
+import FormData from "form-data";
 
 /**
  * Executes HTTP requests and processes responses.
@@ -30,6 +30,12 @@ export class RequestExecutor {
       await this.validateUrl(processedRequest.url);
       await this.checkServerStatus(processedRequest.url);
       const axiosResponse = await this.sendRequest(processedRequest);
+
+      logVerbose("Full response:");
+      logVerbose(`Status: ${axiosResponse.status}`);
+      logVerbose(`Headers: ${JSON.stringify(axiosResponse.headers, null, 2)}`);
+      logVerbose(`Data: ${JSON.stringify(axiosResponse.data, null, 2)}`);
+
       return convertAxiosResponse(axiosResponse);
     } catch (error) {
       return this.handleRequestError(error, processedRequest);
@@ -73,75 +79,44 @@ export class RequestExecutor {
     }
   }
 
-  /**
-   * Sends an HTTP request.
-   * @param request - The HttpRequest to send.
-   * @returns A promise that resolves to an AxiosResponse.
-   */
   private async sendRequest(request: HttpRequest) {
     const { method, url, headers, body } = request;
 
     let data = body;
-    let formHeaders = {};
+    let requestHeaders = { ...headers }; // 복사본을 생성합니다.
 
     const contentType = headers["Content-Type"] || headers["content-type"];
     if (contentType) {
       if (contentType.includes("application/json")) {
         data = this.parseJsonBody(body as string);
       } else if (contentType.includes("multipart/form-data")) {
-        const formData = new FormData();
-        const boundary = contentType.split("boundary=")[1];
-        if (body) {
-          var bodyText = body as string;
-          const parts = bodyText.split(`--${boundary}`);
-          parts.forEach((part) => {
-            if (part.trim() && !part.includes("--")) {
-              const [headerSection, ...contentSections] =
-                part.split("\r\n\r\n");
-              const content = contentSections.join("\r\n\r\n").trim();
-              const nameMatch = headerSection.match(/name="([^"]+)"/);
-              const filenameMatch = headerSection.match(/filename="([^"]+)"/);
-              if (nameMatch && nameMatch[1]) {
-                if (filenameMatch && filenameMatch[1]) {
-                  const filename = filenameMatch[1];
-                  const contentTypeMatch =
-                    headerSection.match(/Content-Type: (.+)/);
-                  const fileContentType = contentTypeMatch
-                    ? contentTypeMatch[1].trim()
-                    : "application/octet-stream";
-                  const buffer = Buffer.from(content, "binary");
-                  formData.append(nameMatch[1], buffer, {
-                    filename,
-                    contentType: fileContentType,
-                  });
-                } else {
-                  formData.append(nameMatch[1], content);
-                }
-              }
-            }
-          });
-        } else {
-          logWarning(
-            "Request body is undefined for multipart/form-data request"
-          );
-        }
+        const formData = this.parseFormData(headers, body as string);
         data = formData;
-        formHeaders = formData.getHeaders();
+
+        // 기존 Content-Type 헤더를 제거하고 formData의 헤더로 대체합니다.
+        delete requestHeaders["Content-Type"];
+        delete requestHeaders["content-type"];
+        requestHeaders = {
+          ...requestHeaders,
+          ...formData.getHeaders(),
+        };
       }
     }
 
     const config: AxiosRequestConfig = {
       method,
       url,
-      headers: { ...headers, ...formHeaders },
+      headers: requestHeaders,
       data,
       timeout: this.requestTimeout,
       validateStatus: () => true,
     };
 
+    const loggableConfig = { ...config, data: "[FormData]" };
     logVerbose(
-      `Sending request with config: ${JSON.stringify(config, null, 2)}`
+      `Sending request with config: ${JSON.stringify(loggableConfig, null, 2)}`
     );
+
     return axios(config);
   }
 
@@ -155,6 +130,90 @@ export class RequestExecutor {
       logVerbose(`Raw body content: ${body}`);
       return {};
     }
+  }
+
+  private parseFormData(
+    headers: Record<string, string>,
+    body: string
+  ): FormData {
+    const formData = new FormData();
+    const contentType = headers["Content-Type"] || headers["content-type"];
+    if (!contentType) {
+      throw new Error("Content-Type header not found.");
+    }
+    const boundaryMatch = contentType.match(/boundary=(.+)$/);
+    if (!boundaryMatch) {
+      throw new Error("Boundary not found in Content-Type header.");
+    }
+    const boundary = boundaryMatch[1].trim();
+
+    const parts = body.split(new RegExp(`--${boundary}`));
+    parts.forEach((part) => {
+      if (part.trim().length === 0 || part == "--") return;
+
+      this.buildFormData(formData, part);
+    });
+
+    return formData;
+  }
+
+  buildFormData(formData: FormData, part: string) {
+    const lines = part.split("\r\n");
+    const headers: Record<string, string> = {};
+    let name: string | null = null;
+    let filename: string | null = null;
+    let contentType: string | null = null;
+    let content: string | null = null;
+
+    lines.forEach((line) => {
+      if (line.trim().length === 0) return;
+      
+      const headerMatch = line.match(/(.+?): (.+)/);
+      if (headerMatch) {
+        headers[headerMatch[1].toLowerCase()] = headerMatch[2];
+      } else {
+        if (content == null) {
+          content = line;
+        } else {
+          content += "\r\n" + line;
+        }
+      }
+    });
+
+    const contentDisposition = headers["content-disposition"];
+    if (contentDisposition) {
+      const match = contentDisposition.match(/name="(.+?)"/);
+      if (match) {
+        name = match[1];
+      }
+      const filenameMatch = contentDisposition.match(/filename="(.+?)"/);
+      if (filenameMatch) {
+        filename = filenameMatch[1];
+      }
+    }
+
+    const contentTypeHeader = headers["content-type"];
+    if (contentTypeHeader) {
+      contentType = contentTypeHeader;
+    }
+
+    if (!name) {
+      throw new Error("Name not found in Content-Disposition header.");
+    }
+
+    let options: {
+      filename?: string;
+      contentType?: string;
+    } = {};
+    if (filename) {
+      options.filename = filename;
+    }
+    if (contentType) {
+      options.contentType = contentType;
+    }
+    
+    const value = content;
+    formData.append(name, value, options);
   }
 
   private async handleRequestError(

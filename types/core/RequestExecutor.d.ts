@@ -23,5 +23,6 @@ export declare class RequestExecutor {
      */
     private sendRequest;
     private parseJsonBody;
+    private parseFormData;
     private handleRequestError;
 }

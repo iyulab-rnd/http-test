@@ -1,13 +1,36 @@
 @host = http://localhost:3000
 
-### GET all users
-GET {{host}}/users
+### POST form data
+POST {{host}}/submitForm
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary123456
 
-#### Assert: Check all users
-Status: 2xx
+------WebKitFormBoundary123456
+Content-Disposition: form-data; name="name"
+
+Alice Johnson
+------WebKitFormBoundary123456
+Content-Disposition: form-data; name="email"
+
+alice@example.com
+------WebKitFormBoundary123456--
+
+#### Assert: Check form data submission
+Status: 201
 Content-Type: application/json
 Body:
-$[0].id: 1
-$[0].name: John Doe
-$[1].id: 2
-$[1].name: Jane Smith
+$.name: Alice Johnson
+$.email: alice@example.com
+
+# ### POST file upload
+# POST {{host}}/upload
+# Content-Type: multipart/form-data; boundary=----WebKitFormBoundary123456
+
+# ------WebKitFormBoundary123456
+# Content-Disposition: form-data; name="file"; filename="attachfile.data"
+# Content-Type: application/octet-stream
+
+# < ./attachfile.data
+# ------WebKitFormBoundary123456--
+
+# #### Assert: Check file upload
+# Status: 201

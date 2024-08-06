@@ -16,12 +16,11 @@ export async function run(
     logInfo("Starting test run...");
 
     const absoluteFilePath = path.resolve(filePath);
-    const baseDir = path.dirname(absoluteFilePath);
-
+    
     const variableManager = new VariableManager();
     await loadVariablesFile(variableManager, absoluteFilePath, options.var);
 
-    const httpFileParser = new HttpFileParser(variableManager, baseDir);
+    const httpFileParser = new HttpFileParser(variableManager);
     const requests: HttpRequest[] = await httpFileParser.parse(absoluteFilePath);
 
     const testManager = new TestManager(absoluteFilePath);

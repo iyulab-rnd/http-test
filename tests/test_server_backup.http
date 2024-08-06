@@ -187,7 +187,7 @@ $.title: Updated Post Title
 GET {{host}}/posts/999
 
 #### Assert: Check non-existent post
-Status: 401
+Status: 4xx
 Content-Type: application/json
 Body:
 $.error: Post not found

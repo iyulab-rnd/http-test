@@ -12,50 +12,50 @@ export function setVerbose(v: boolean): void {
   verbose = v;
 }
 
-export function log(message: string, level: LogLevel = LogLevel.INFO): void {
+export function log(message?: unknown, level: LogLevel = LogLevel.INFO, ...optionalParams: unknown[]): void {
   let logMessage = `[${LogLevel[level]}] ${message}`;
 
   switch (level) {
     case LogLevel.VERBOSE:
       if (verbose) {
-        console.log(chalk.gray(logMessage));
+        console.log(chalk.gray(logMessage), ...optionalParams);
       }
       break;
     case LogLevel.INFO:
-      console.log(chalk.blue(logMessage));
+      console.log(chalk.blue(logMessage), ...optionalParams);
       break;
     case LogLevel.WARNING:
-      console.warn(chalk.yellow(logMessage));
+      console.warn(chalk.yellow(logMessage), ...optionalParams);
       break;
     case LogLevel.ERROR:
-      console.error(chalk.red(logMessage));
+      console.error(chalk.red(logMessage), ...optionalParams);
       break;
     case LogLevel.PLAIN:
-      console.log(message);
+      console.log(message, ...optionalParams);
       break;
     default:
-      console.log(logMessage);
+      console.log(logMessage, ...optionalParams);
   }
 }
 
-export function logVerbose(message: string): void {
-  log(message, LogLevel.VERBOSE);
+export function logVerbose(message?: unknown, ...optionalParams: unknown[]): void {
+  log(message, LogLevel.VERBOSE, ...optionalParams);
 }
 
-export function logInfo(message: string): void {
-  log(message, LogLevel.INFO);
+export function logInfo(message?: unknown, ...optionalParams: unknown[]): void {
+  log(message, LogLevel.INFO, ...optionalParams);
 }
 
-export function logWarning(message: string): void {
-  log(message, LogLevel.WARNING);
+export function logWarning(message?: unknown, ...optionalParams: unknown[]): void {
+  log(message, LogLevel.WARNING, ...optionalParams);
 }
 
-export function logError(message: string): void {
-  log(message, LogLevel.ERROR);
+export function logError(message?: unknown, ...optionalParams: unknown[]): void {
+  log(message, LogLevel.ERROR, ...optionalParams);
 }
 
-export function logPlain(message: string): void {
-  log(message, LogLevel.PLAIN);
+export function logPlain(message?: unknown, ...optionalParams: unknown[]): void {
+  log(message, LogLevel.PLAIN, ...optionalParams);
 }
 
 export function logRequestStart(request: HttpRequest): void {
@@ -78,6 +78,15 @@ export function logRequestStart(request: HttpRequest): void {
       });
     });
   }
+
+  if (request.variableUpdates.length > 0) {
+    logVerbose("Variable Updates:");
+    request.variableUpdates.forEach((update, index) => {
+      logVerbose(`  Update ${index + 1}: ${update.key}`);
+      logVerbose(`    - ${JSON.stringify(update)}`);
+    });
+  }
+
   logPlain("=".repeat(50));
 
 }

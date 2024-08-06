@@ -27,11 +27,9 @@ export class AssertionEngine {
     }
 
     logVerbose(
-      `Asserting ${JSON.stringify(assertion)} on response with status ${
-        response.status
-      }`
+      `Asserting ${JSON.stringify(assertion)}`
     );
-
+    
     switch (assertion.type) {
       case "status":
         this.assertStatus(assertion, response);
