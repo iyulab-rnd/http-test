@@ -8,7 +8,7 @@
     "url": "https://github.com/iyulab-rnd/http-test"
   },
   "icon": "logo_128.png",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "engines": {
     "vscode": "^1.75.0"
   },
@@ -33,65 +33,73 @@
     "onCommand:extension.http_test.runVerbose"
   ],
   "contributes": {
-    "commands": [
+  "commands": [
+    {
+      "command": "extension.http_test.run",
+      "title": "Run HTTP Test",
+      "icon": {
+        "light": "assets/light/test.svg",
+        "dark": "assets/dark/test.svg"
+      }
+    },
+    {
+      "command": "extension.http_test.runVerbose",
+      "title": "Run HTTP Test (Verbose)",
+      "icon": {
+        "light": "assets/light/test-verbose.svg",
+        "dark": "assets/dark/test-verbose.svg"
+      }
+    }
+  ],
+  "menus": {
+    "editor/title": [
+      {
+        "when": "resourceExtname == .http",
+        "command": "extension.http_test.run",
+        "group": "navigation@1"
+      },
+      {
+        "when": "resourceExtname == .http",
+        "command": "extension.http_test.runVerbose",
+        "group": "navigation@2"
+      }
+    ],
+    "editor/context": [
+      {
+        "when": "resourceExtname == .http",
+        "command": "extension.http_test.run",
+        "group": "z_http-test@1"
+      },
+      {
+        "when": "resourceExtname == .http",
+        "command": "extension.http_test.runVerbose",
+        "group": "z_http-test@2"
+      }
+    ],
+    "explorer/context": [
+      {
+        "when": "resourceExtname == .http",
+        "command": "extension.http_test.run",
+        "group": "z_http-test@1"
+      },
+      {
+        "when": "resourceExtname == .http",
+        "command": "extension.http_test.runVerbose",
+        "group": "z_http-test@2"
+      }
+    ],
+    "commandPalette": [
       {
         "command": "extension.http_test.run",
-        "title": "Run HTTP Test"
+        "when": "resourceExtname == .http"
       },
       {
         "command": "extension.http_test.runVerbose",
-        "title": "Run HTTP Test (Verbose)"
+        "when": "resourceExtname == .http"
       }
-    ],
-    "menus": {
-      "explorer/context": [
-        {
-          "when": "resourceExtname == .http",
-          "command": "extension.http_test.run",
-          "group": "navigation@-1"
-        },
-        {
-          "when": "resourceExtname == .http",
-          "command": "extension.http_test.runVerbose",
-          "group": "navigation@-1|"
-        }
-      ],
-      "editor/context": [
-        {
-          "when": "resourceExtname == .http",
-          "command": "extension.http_test.run",
-          "group": "navigation@-1"
-        },
-        {
-          "when": "resourceExtname == .http",
-          "command": "extension.http_test.runVerbose",
-          "group": "navigation@-1|"
-        }
-      ],
-      "editor/title": [
-        {
-          "when": "resourceExtname == .http",
-          "command": "extension.http_test.run",
-          "group": "navigation@-1"
-        },
-        {
-          "when": "resourceExtname == .http",
-          "command": "extension.http_test.runVerbose",
-          "group": "navigation@-1|"
-        }
-      ],
-      "commandPalette": [
-        {
-          "command": "extension.http_test.run",
-          "when": "resourceExtname == .http"
-        },
-        {
-          "command": "extension.http_test.runVerbose",
-          "when": "resourceExtname == .http"
-        }
-      ]
-    }
-  },
+    ]
+  }
+},
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",

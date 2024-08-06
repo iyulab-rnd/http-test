@@ -22,14 +22,12 @@
     "emitDeclarationOnly": true,
     "outDir": "types",
 
-    "forceConsistentCasingInFileNames": true,
+    "forceConsistentCasingInFileNames": true
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules"],
   "ts-node": {
-    "ts-node": {
-      "esm": true,
-      "experimentalSpecifierResolution": "node"
-    }
+    "esm": true,
+    "experimentalSpecifierResolution": "node"
   }
 }

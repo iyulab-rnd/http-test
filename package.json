@@ -1,6 +1,6 @@
 {
   "name": "@iyulab/http-test",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "description": "API testing library, by .http files, Automatic assertion",
   "author": {
     "name": "iyulab",
@@ -46,6 +46,8 @@
     "typescript": "^5.5.4"
   },
   "scripts": {
+    "start": "node --loader ts-node/esm ./src/program.ts ./tests/test_server.http",
+    "detail": "node --loader ts-node/esm ./src/program.ts ./tests/test_server.http --verbose",
     "lint": "eslint",
     "delete:types": "if exist dist (rmdir /s /q types)",
     "delete:dist": "if exist dist (rmdir /s /q dist)",

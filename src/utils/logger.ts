@@ -60,15 +60,26 @@ export function logPlain(message: string): void {
 
 export function logRequestStart(request: HttpRequest): void {
   logPlain("\n" + "=".repeat(50));
-  logPlain(`📌 Request: ${request.name}`);
+  logPlain(`📌 Parsed Request: ${request.name}`);
   logPlain("=".repeat(50));
-  logVerbose(`Executing request: ${request.name}`);
   logVerbose(`Method: ${request.method}`);
   logVerbose(`URL: ${request.url}`);
   logVerbose(`Headers: ${JSON.stringify(request.headers)}`);
   if (request.body) {
     logVerbose(`Body: ${request.body}`);
   }
+  
+  if (request.tests.length > 0) {
+    logVerbose("Tests:");
+    request.tests.forEach((test, index) => {
+      logVerbose(`  Test ${index + 1}: ${test.name}`);
+      test.assertions.forEach(assertion => {
+        logVerbose(`    - ${JSON.stringify(assertion)}`);
+      });
+    });
+  }
+  logPlain("=".repeat(50));
+
 }
 
 export function logTestResult(result: TestResult): void {

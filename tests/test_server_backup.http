@@ -1,0 +1,304 @@
+@host = http://localhost:3000
+
+### GET all users
+GET {{host}}/users
+
+#### Assert: Check all users
+Status: 2xx
+Content-Type: application/json
+Body:
+$[0].id: 1
+$[0].name: John Doe
+$[1].id: 2
+$[1].name: Jane Smith
+
+### GET user by ID
+GET {{host}}/users/1
+
+#### Assert: Check user by ID
+Status: 200
+Content-Type: application/json
+Body:
+$.id: 1
+$.name: John Doe
+$.email: john@example.com
+
+### GET non-existent user
+GET {{host}}/users/999
+#### Assert: Check non-existent user
+Status: 404
+Content-Type: application/json
+Body:
+$.error: User not found
+
+### POST new post for user 1
+POST {{host}}/posts
+Content-Type: application/json
+
+{
+  "title": "First Post",
+  "body": "This is the first post by user 1",
+  "userId": 1
+}
+
+#### Assert: Check new post creation for user 1
+Status: 201
+Content-Type: application/json
+Body:
+$.title: First Post
+$.body: This is the first post by user 1
+$.userId: 1
+
+# Save new post ID to variable
+@firstPostId = $.id
+
+### GET all posts by user
+GET {{host}}/users/1/posts
+
+#### Assert: Check user posts
+Status: 200
+Content-Type: application/json
+Body:
+$[0].title: First Post
+$[0].body: This is the first post by user 1
+
+### POST new user
+POST {{host}}/users
+Content-Type: application/json
+
+{
+  "name": "Alice Johnson",
+  "email": "alice@example.com"
+}
+
+#### Assert: Check new user creation
+Status: 201
+Content-Type: application/json
+Body:
+$.name: Alice Johnson
+$.email: alice@example.com
+
+# Save new user ID to variable
+@newUserId = $.id
+
+### Verify new user added
+GET {{host}}/users/{{newUserId}}
+
+#### Assert: Verify new user
+Status: 200
+Content-Type: application/json
+Body:
+$.name: Alice Johnson
+$.email: alice@example.com
+
+### POST new post
+POST {{host}}/posts
+Content-Type: application/json
+
+{
+  "title": "New Post",
+  "body": "This is a new post",
+  "userId": {{newUserId}}
+}
+
+#### Assert: Check new post creation
+Status: 201
+Content-Type: application/json
+Body:
+$.title: New Post
+$.body: This is a new post
+$.userId: {{newUserId}}
+
+# Save new post ID to variable
+@newPostId = $.id
+
+### GET post comments (initially empty)
+GET {{host}}/posts/{{newPostId}}/comments
+#### Assert: Check initial post comments
+Status: 200
+Content-Type: application/json
+Body: []
+
+### PUT update user
+PUT {{host}}/users/{{newUserId}}
+Content-Type: application/json
+
+{
+  "name": "Alice Johnson Updated",
+  "email": "alice.updated@example.com"
+}
+
+#### Assert: Check user update
+Status: 200
+Content-Type: application/json
+Body:
+$.name: Alice Johnson Updated
+$.email: alice.updated@example.com
+
+### Verify user updated
+GET {{host}}/users/{{newUserId}}
+
+#### Assert: Verify updated user
+Status: 200
+Content-Type: application/json
+Body:
+$.name: Alice Johnson Updated
+$.email: alice.updated@example.com
+
+### DELETE user
+DELETE {{host}}/users/{{newUserId}}
+
+#### Assert: Check user deletion
+Status: 204
+
+### Verify user deleted
+GET {{host}}/users/{{newUserId}}
+
+#### Assert: Verify user not found
+Status: 404
+Content-Type: application/json
+Body:
+$.error: User not found
+
+### PATCH update post title
+PATCH {{host}}/posts/{{newPostId}}
+Content-Type: application/json
+
+{
+  "title": "Updated Post Title"
+}
+
+#### Assert: Check post title update
+Status: 200
+Content-Type: application/json
+Body:
+$.title: Updated Post Title
+
+### Verify post title updated
+GET {{host}}/posts/{{newPostId}}
+
+#### Assert: Verify updated post title
+Status: 2xx
+Content-Type: application/json
+Body:
+$.title: Updated Post Title
+
+### GET non-existent post
+GET {{host}}/posts/999
+
+#### Assert: Check non-existent post
+Status: 401
+Content-Type: application/json
+Body:
+$.error: Post not found
+
+### POST file upload
+POST {{host}}/upload
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary123456
+
+------WebKitFormBoundary123456
+Content-Disposition: form-data; name="file"; filename="attachfile.data"
+Content-Type: application/octet-stream
+
+< ./attachfile.data
+------WebKitFormBoundary123456--
+
+#### Assert: Check file upload
+Status: 201
+
+### POST form data
+POST {{host}}/submitForm
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary123456
+
+------WebKitFormBoundary123456
+Content-Disposition: form-data; name="name"
+
+Alice Johnson
+------WebKitFormBoundary123456
+Content-Disposition: form-data; name="email"
+
+alice@example.com
+------WebKitFormBoundary123456--
+
+#### Assert: Check form data submission
+Status: 201
+Content-Type: application/json
+Body:
+$.name: Alice Johnson
+$.email: alice@example.com
+
+### POST new user with invalid email
+POST {{host}}/users
+Content-Type: application/json
+
+{
+  "name": "Bob Smith",
+  "email": "bob_at_example.com"
+}
+
+#### Assert: Check invalid email
+Status: 400
+Content-Type: application/json
+Body:
+$.error: Invalid email format
+
+### POST new comment on post
+POST {{host}}/posts/{{newPostId}}/comments
+Content-Type: application/json
+
+{
+  "body": "This is a comment",
+  "userId": 1
+}
+
+#### Assert: Check new comment
+Status: 201
+Content-Type: application/json
+Body:
+$.body: This is a comment
+$.userId: 1
+
+### Verify new comment added
+GET {{host}}/posts/{{newPostId}}/comments
+
+#### Assert: Verify new comment
+Status: 2xx
+Content-Type: application/json
+Body:
+$[0].body: This is a comment
+$[0].userId: 1
+
+### POST new post with missing fields
+POST {{host}}/posts
+Content-Type: application/json
+
+{
+  "title": "Incomplete Post"
+}
+
+#### Assert: Check missing fields
+Status: 401
+Content-Type: application/json
+Body:
+$.error: Missing required fields
+
+### GET posts with query parameters
+GET {{host}}/posts?userId=1&limit=2
+
+#### Assert: Check query parameters
+Status: 200
+Content-Type: application/json
+Body:
+$[0].userId: 1
+$[1].userId: 1
+$.length: 2
+
+### GET filtered users
+GET {{host}}/users?name=John&limit=2
+
+#### Assert: Check filtered users
+Status: 200
+Content-Type: application/json
+Body:
+$[0].name: John Doe
+$.length: 2

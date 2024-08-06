@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { exec } from 'child_process';
+import { spawn } from 'child_process';
 import * as path from 'path';
 
 let outputChannel: vscode.OutputChannel;
@@ -19,14 +19,27 @@ function runHttpTest(uri: vscode.Uri | undefined, verbose: boolean) {
 
     outputChannel.clear();
     outputChannel.show(true);
-    outputChannel.appendLine('Running HTTP Test...');
+
+    outputChannel.appendLine(`Starting HTTP Test for file: ${path.basename(filePath)}`);
+    outputChannel.appendLine('-------------------------------------------');
 
     const verboseFlag = verbose ? '--verbose' : '';
-    exec(`npx -y @iyulab/http-test "${filePath}" ${verboseFlag}`, { cwd: workspaceRoot }, (err, stdout, stderr) => {
-        if (stdout) {
-            outputChannel.appendLine(stdout);
-        }
-        outputChannel.appendLine('HTTP Test completed.');
+    const child = spawn('npx', ['-y', '@iyulab/http-test', filePath, verboseFlag], { 
+        cwd: workspaceRoot,
+        shell: true
+    });
+
+    child.stdout.on('data', (data) => {
+        outputChannel.append(data.toString());
+    });
+
+    child.stderr.on('data', (data) => {
+        outputChannel.append(data.toString());
+    });
+
+    child.on('close', () => {
+        outputChannel.appendLine('-------------------------------------------');
+        outputChannel.appendLine(`HTTP Test completed`);
     });
 }
 
