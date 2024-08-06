@@ -8,6 +8,7 @@ export declare class RequestExecutor {
     private baseDir;
     private serverCheckTimeout;
     private requestTimeout;
+    private axiosInstance;
     /**
      * Creates an instance of RequestExecutor.
      * @param variableManager - The VariableManager instance to use.

@@ -8,6 +8,7 @@ import { RequestError } from "../errors/RequestError";
 import FormData from "form-data";
 import fs from "fs";
 import path from "path";
+import https from "https";
 
 /**
  * Executes HTTP requests and processes responses.
@@ -16,15 +17,27 @@ export class RequestExecutor {
   private serverCheckTimeout = 5000;
   private requestTimeout = 10000;
 
+  // RequestExecutor 클래스 내부
+  private axiosInstance = axios.create({
+    httpsAgent: new https.Agent({
+      rejectUnauthorized: false,
+    }),
+  });
+
   /**
    * Creates an instance of RequestExecutor.
    * @param variableManager - The VariableManager instance to use.
    */
-  constructor(private variableManager: VariableManager, private baseDir: string) {}
+  constructor(
+    private variableManager: VariableManager,
+    private baseDir: string
+  ) {}
 
   async execute(request: HttpRequest): Promise<HttpResponse> {
     const processedRequest = this.applyVariables(request);
-    logVerbose(`Executing request: ${processedRequest.method} ${processedRequest.url}`);
+    logVerbose(
+      `Executing request: ${processedRequest.method} ${processedRequest.url}`
+    );
 
     try {
       await this.validateUrl(processedRequest.url);
@@ -69,7 +82,10 @@ export class RequestExecutor {
 
   private async checkServerStatus(url: string): Promise<void> {
     try {
-      await axios.head(url, { timeout: this.serverCheckTimeout });
+      console.log("Checking server status...");
+      await this.axiosInstance.head(url, {
+        timeout: this.serverCheckTimeout,
+      });
     } catch (error) {
       if (axios.isAxiosError(error) && !error.response) {
         throw new RequestError(
@@ -116,7 +132,7 @@ export class RequestExecutor {
       `Sending request with config: ${JSON.stringify(loggableConfig, null, 2)}`
     );
 
-    return axios(config);
+    return this.axiosInstance(config);
   }
 
   private parseJsonBody(body: string | undefined): object | undefined {
@@ -219,7 +235,7 @@ export class RequestExecutor {
         if (!fs.existsSync(absoluteFilePath)) {
           throw new Error(filePath + " is not found.");
         }
-        
+
         formData.append(name, fs.createReadStream(absoluteFilePath), options);
       } else {
         throw new Error("Invalid file path format.");
