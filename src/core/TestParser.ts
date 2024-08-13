@@ -16,18 +16,20 @@ export class TestParser {
     const variableUpdates: { key: string; value: string }[] = [];
     let currentTest: TestItem | null = null;
     for (const line of lines) {
-      if (line.startsWith("#### ")) {
+
+      if (line.startsWith("####")) {
         if (currentTest) {
           tests.push(currentTest);
         }
         currentTest = this.createNewTest(line);
-      } else if (line.startsWith("@")) {
+      } else if (line.trim().match(/^@\w+\s*=\s*.+/)) {
+
         // 변수 업데이트 라인 처리
-        const [key, value] = line
-          .slice(1)
-          .split("=")
-          .map((s) => s.trim());
-        variableUpdates.push({ key, value });
+        const [key, value] = line.split(/\s*=\s*/, 2);
+        variableUpdates.push({ 
+          key: key.slice(1).trim(), 
+          value: this.variableManager.replaceVariables(value.trim()) 
+        });
       } else if (currentTest && line.includes(":")) {
         const assertion = this.parseAssertion(line);
         if (assertion) {
@@ -35,11 +37,9 @@ export class TestParser {
         }
       }
     }
-
     if (currentTest) {
       tests.push(currentTest);
     }
-
     return { tests, variableUpdates };
   }
 

@@ -8,7 +8,7 @@
     "url": "https://github.com/iyulab-rnd/http-test"
   },
   "icon": "logo_128.png",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "engines": {
     "vscode": "^1.75.0"
   },
@@ -16,15 +16,26 @@
     "Testing"
   ],
   "keywords": [
-    "development",
     "http",
-    "test",
-    "utilities",
     "api",
     "testing",
-    "automatic",
+    "http file",
+    "extension",
     "assertion",
-    "assert"
+    "HTTP testing",
+    "API testing",
+    "REST API",
+    "request validation",
+    "response validation",
+    "API automation",
+    "integration testing",
+    "REST client",
+    "HTTP client",
+    "API test automation",
+    "web services testing",
+    "HTTP methods",
+    "HTTP request",
+    ".http"
   ],
   "main": "./out/extension.js",
   "activationEvents": [

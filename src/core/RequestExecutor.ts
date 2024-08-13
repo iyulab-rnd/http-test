@@ -9,6 +9,7 @@ import FormData from "form-data";
 import fs from "fs";
 import path from "path";
 import https from "https";
+import { JsonUtils } from "../utils/jsonUtils";
 
 /**
  * Executes HTTP requests and processes responses.
@@ -82,7 +83,6 @@ export class RequestExecutor {
 
   private async checkServerStatus(url: string): Promise<void> {
     try {
-      console.log("Checking server status...");
       await this.axiosInstance.head(url, {
         timeout: this.serverCheckTimeout,
       });
@@ -136,15 +136,7 @@ export class RequestExecutor {
   }
 
   private parseJsonBody(body: string | undefined): object | undefined {
-    if (!body) return undefined;
-    body = body.trim();
-    try {
-      return JSON.parse(body);
-    } catch (error) {
-      logError(`Failed to parse JSON body: ${error}`);
-      logVerbose(`Raw body content: ${body}`);
-      return {};
-    }
+    return JsonUtils.parseJson(body);
   }
 
   private parseFormData(
@@ -228,7 +220,7 @@ export class RequestExecutor {
     }
 
     if (filename && content) {
-      const [_, filePath] = (content as string).split(" ");
+      const [, filePath] = (content as string).split(" ");
 
       if (filePath) {
         const absoluteFilePath = path.resolve(this.baseDir, filePath);

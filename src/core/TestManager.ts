@@ -90,7 +90,7 @@ export class TestManager {
     const tests =
       request.tests.length > 0
         ? request.tests
-        : [this.createDefaultStatusCodeTest()];
+        : [this.createDefaultStatusCodeTest(request.name)];
     const results: TestResult[] = [];
 
     for (const test of tests) {
@@ -129,10 +129,10 @@ export class TestManager {
     };
   }
 
-  private createDefaultStatusCodeTest(): TestItem {
+  private createDefaultStatusCodeTest(name: string): TestItem {
     return {
       type: "Assert",
-      name: "Default Status Code Test",
+      name: `${name} Status OK`,
       assertions: [
         {
           type: "status",

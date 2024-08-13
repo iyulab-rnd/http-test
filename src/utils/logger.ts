@@ -87,8 +87,9 @@ export function logRequestStart(request: HttpRequest): void {
     });
   }
 
-  logPlain("=".repeat(50));
-
+  if (verbose == true) {
+    logPlain("=".repeat(50));
+  }
 }
 
 export function logTestResult(result: TestResult): void {

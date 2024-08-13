@@ -1,6 +1,9 @@
 import vm from "vm";
 import { readFile } from "../utils/fileUtils";
 import { HttpResponse, CustomValidatorContext } from "../types";
+import path from "path";
+import fs from "fs";
+import http from "http";
 
 export async function loadCustomValidator(
   functionPath: string
@@ -9,9 +12,16 @@ export async function loadCustomValidator(
   
   const sandbox = {
     module: { exports: {} },
-    require: (moduleName: string) => {
+    async import(moduleName: string) {
       if (['path', 'fs', 'http'].includes(moduleName)) {
-        return require(moduleName);
+        switch (moduleName) {
+          case 'path':
+            return path;
+          case 'fs':
+            return fs;
+          case 'http':
+            return http;
+        }
       }
       throw new Error(`Module ${moduleName} is not allowed`);
     },
@@ -19,7 +29,11 @@ export async function loadCustomValidator(
   };
 
   vm.createContext(sandbox);
-  vm.runInContext(script, sandbox);
+  await vm.runInContext(`
+    (async () => {
+      ${script}
+    })();
+  `, sandbox);
 
   if (typeof sandbox.module.exports !== "function") {
     throw new Error("Custom validator must export a function");

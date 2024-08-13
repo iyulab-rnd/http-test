@@ -38,7 +38,7 @@ export class HttpRequestParser {
   }
 
   private splitRequestAndTestLines(lines: string[]): [string[], string[]] {
-    const testStartIndex = lines.findIndex(line => line.startsWith('#### '));
+    const testStartIndex = lines.findIndex(line => line.startsWith('####'));
     if (testStartIndex === -1) {
       return [lines, []];
     }

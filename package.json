@@ -1,6 +1,6 @@
 {
   "name": "@iyulab/http-test",
-  "version": "1.0.17",
+  "version": "1.0.19",
   "description": "API testing library, by .http files, Automatic assertion",
   "author": {
     "name": "iyulab",
@@ -37,6 +37,7 @@
     "chalk": "^5.3.0",
     "eslint": "^9.8.0",
     "express": "^4.19.2",
+    "json5": "^2.2.3",
     "multer": "^1.4.5-lts.1",
     "rollup": "^4.20.0",
     "rollup-plugin-dts": "^6.1.1",
@@ -47,7 +48,7 @@
   },
   "scripts": {
     "start": "node --loader ts-node/esm ./src/program.ts ./tests/test_server.http",
-    "detail": "node --loader ts-node/esm ./src/program.ts D:/data/MLoop.AppService/http/api.http --verbose",
+    "detail": "node --loader ts-node/esm ./src/program.ts ./tests/test_server.http --verbose",
     "lint": "eslint",
     "delete:types": "if exist dist (rmdir /s /q types)",
     "delete:dist": "if exist dist (rmdir /s /q dist)",

@@ -12,6 +12,10 @@ http-test VS-Tool is a Visual Studio Code extension that makes it easy to use th
 
 ![http-test VS-Tool in action](screenshot.png)
 
+## Requirements
+
+- Node.js must be installed ([Download Node.js](https://nodejs.org))
+
 ## How to Use
 
 1. Open a .http file
